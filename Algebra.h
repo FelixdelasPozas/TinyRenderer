@@ -25,6 +25,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <cmath>
 
 //--------------------------------------------------------------------
 class algebra_error: public std::logic_error
@@ -37,6 +38,359 @@ class algebra_error: public std::logic_error
 
 //--------------------------------------------------------------------
 // Vector class
+//
+template<class T> class Vector2
+{
+  public:
+    /** \brief Vector2 default constructor.
+     *
+     */
+    Vector2()
+    {
+      data.reserve(2);
+      data.push_back(T(0));
+      data.push_back(T(0));
+    }
+
+    /** \brief Vector2 copy constructor.
+     * \param[in] v vector.
+     *
+     */
+    Vector2(const Vector2<T> &v)
+    {
+      data.push_back(v[0]);
+      data.push_back(v[1]);
+    }
+
+    /** \brief Vector2 value constructor.
+     * \param[in] value T value.
+     *
+     */
+    Vector2(const T &value)
+    {
+      data.push_back(value);
+      data.push_back(value);
+    }
+
+    /** \brief Vector2 multiple values constructor.
+     * \param[in] x T value.
+     * \param[in] y T value.
+     *
+     */
+    template<class X> Vector2(const X &x, const X &y)
+    {
+      data.push_back(static_cast<T>(x));
+      data.push_back(static_cast<T>(y));
+    }
+
+    /** \brief Scalar assignment operator.
+     * \param[in] value T value.
+     *
+     */
+    Vector2<T>& operator=(const T &value)
+    {
+      data[0] = data[1] = value;
+
+      return *this;
+    }
+
+    /** \brief Vector2 assignment operator.
+     * \param[in] v vector.
+     *
+     */
+    Vector2<T>& operator=(const Vector2<T> &v)
+    {
+      data[0] = v[0];
+      data[1] = v[1];
+
+      return *this;
+    }
+
+    /** \brief Logical operator ==
+     * \param[in] a vector.
+     * \param[in] b vector.
+     *
+     */
+    friend bool operator==(const Vector2<T> &a, const Vector2<T> &b)
+    {
+      for (auto i: {0,1})
+      {
+        if (a[i] != b[i])
+        {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    /** \brief Logical operator !=
+     * \param[in] a vector.
+     * \param[in] b vector.
+     *
+     */
+    friend bool operator!=(const Vector2<T> &a, const Vector2<T> &b)
+    {
+      return !(a == b);
+    }
+
+    /** \brief Subscript operator
+     * \param[in] i index value.
+     *
+     */
+    inline T& operator[](int index)
+    {
+      assert((0 <= index) && (index < 2));
+
+      return data[index];
+    }
+
+    /** \brief Const subscript operator
+     * \param[in] i index value.
+     *
+     */
+    inline const T& operator[](int index) const
+    {
+      assert((0 <= index) && (index < 2));
+
+      return data[index];
+    }
+
+    /** \brief Unary operator +
+     *
+     */
+    inline const Vector2<T> operator+()
+    {
+      Vector2<T> result = *this;
+
+      return result;
+    }
+
+    /** \brief Unary operator -
+     *
+     */
+    inline const Vector2<T> operator-()
+    {
+      Vector2<T> result;
+      result.data[0] = -data[0];
+      result.data[1] = -data[1];
+
+      return result;
+    }
+
+    /** \brief Set values
+     * \param[in] x T value.
+     * \param[in] y T value.
+     *
+     */
+    template<class X> inline Vector2<T>& Set(const X &x, const X &y)
+    {
+      data[0] = static_cast<T>(x);
+      data[1] = static_cast<T>(y);
+
+      return *this;
+    }
+  private:
+    std::vector<T> data;
+};
+
+/** \brief operator<<
+ * \param[in] stream iostream.
+ * \param[in] a vector.
+ *
+ */
+template<class T> std::ostream& operator<<(std::ostream &stream, const Vector2<T> &v)
+{
+  stream << "[";
+  for (auto i: {0,1})
+  {
+    stream << v[i] << ((i == 2) ? "]" : ",");
+  }
+
+  return stream;
+}
+
+/** \brief operator* (scalar*vector)
+ * \param[in] c T value.
+ * \param[in] a vector.
+ */
+template<class T> inline Vector2<T> operator*(const T &c, const Vector2<T> &v)
+{
+  Vector2<T> tmp(0);
+
+  for (auto i: {0,1})
+  {
+    tmp[i] = v[i] * c;
+  }
+
+  return tmp;
+}
+
+/** \brief operator* (vector*value)
+ * \param[in] v vector.
+ * \param[in] c T value.
+ *
+ */
+template<class T> inline Vector2<T> operator*(const Vector2<T> &v, const T &c)
+{
+  Vector2<T> tmp(0);
+
+  for (auto i: {0,1})
+  {
+    tmp[i] = v[i] * c;
+  }
+
+  return tmp;
+}
+
+/** \brief operator* (vector*value)
+ * \param[in] v vector.
+ * \param[in] c X value.
+ *
+ */
+template<class T, class X> inline Vector2<T> operator*(const Vector2<T> &v, const X &c)
+{
+  Vector2<T> tmp(0);
+
+  for (auto i: {0,1})
+  {
+    tmp[i] = v[i] * static_cast<T>(c);
+  }
+
+  return tmp;
+}
+
+/** \brief operator/ (vector/value)
+ * \param[in] v vector.
+ * \param[in] c T value.
+ *
+ */
+template<class T, class X> inline Vector2<T> operator/(const Vector2<T> &v, const X &c)
+{
+  if (c == T(0))
+  {
+    throw algebra_error("Vector2::operator/: division by zero");
+  }
+
+  Vector2<T> tmp(0);
+
+  for (auto i: {0,1})
+  {
+    tmp[i] = v[i] / static_cast<T>(c);
+  }
+
+  return tmp;
+}
+
+/** \brief operator+ (binary)
+ * \param[in] a vector.
+ * \param[in] b vector.
+ *
+ */
+template<class T> inline Vector2<T> operator+(const Vector2<T> &a, const Vector2<T> &b)
+{
+  Vector2<T> ret(0);
+
+  for (auto i: {0,1})
+  {
+    ret[i] = a[i] + b[i];
+  }
+
+  return ret;
+}
+
+/** \brief operator- (binary)
+ * \param[in] a vector.
+ * \param[in] b vector.
+ *
+ */
+template<class T> inline Vector2<T> operator-(const Vector2<T> &a, const Vector2<T> &b)
+{
+  Vector2<T> ret(0);
+
+  for (auto i: {0,1})
+  {
+    ret[i] = a[i] - b[i];
+  }
+
+  return ret;
+}
+
+/** \brief operator* (binary, dot product)
+ * \param[in] a vector.
+ * \param[in] b vector.
+ *
+ */
+template<class T> inline T operator*(const Vector2<T> &a, const Vector2<T> &b)
+{
+  T sum = 0;
+
+  for (auto i: {0,1})
+  {
+    sum += a[i] * b[i];
+  }
+
+  return sum;
+}
+
+/** \brief operator+= (binary)
+ * \param[in] a vector.
+ * \param[in] b vector.
+ *
+ */
+template<class T> inline Vector2<T> operator+=(Vector2<T> &a, const Vector2<T> &b)
+{
+  for (auto i: {0,1})
+  {
+    a[i] = a[i] + b[i];
+  }
+
+  return a;
+}
+
+/** \brief operator-= (binary)
+ * \param[in] a vector.
+ * \param[in] b vector.
+ *
+ */
+template<class T> inline Vector2<T> operator-=(Vector2<T> &a, const Vector2<T> &b)
+{
+  for (auto i: {0,1})
+  {
+    a[i] = a[i] - b[i];
+  }
+
+  return a;
+}
+
+/** \brief operator*= (vector*value)
+ * \param[in] a vector.
+ * \param[in] c X value.
+ *
+ */
+template<class T> inline Vector2<T> operator*=(const Vector2<T> &v, const T &c)
+{
+  for (auto i: {0,1})
+  {
+    v[i] = v[i] * c;
+  }
+}
+
+/** \brief operator*= (vector*value)
+ * \param[in] a vector.
+ * \param[in] c X value.
+ *
+ */
+template<class T, class X> inline Vector2<T> operator*=(const Vector2<T> &v, const X &c)
+{
+  for (auto i: {0,1})
+  {
+    v[i] = v[i] * static_cast<T>(c);
+  }
+}
+
+//--------------------------------------------------------------------
+// Vector 3 class
 //
 template<class T> class Vector3
 {
@@ -197,6 +551,19 @@ template<class T> class Vector3
       data[2] = static_cast<T>(z);
       return *this;
     }
+
+    /** \brief Normalize vector.
+     *
+     */
+    inline Vector3<T>& normalize()
+    {
+      auto norm = std::sqrt(data[0]*data[0]+data[1]*data[1]+data[2]*data[2]);
+
+      *this = (*this)*(1/norm);
+
+      return *this;
+    }
+
   private:
     std::vector<T> data;
 };
@@ -394,6 +761,21 @@ template<class T, class X> inline Vector3<T> operator*=(const Vector3<T> &v, con
   {
     v[i] = v[i] * static_cast<T>(c);
   }
+}
+
+/** \brief operator cross product
+ * \param[in] v vector.
+ * \param[in] w vector.
+ *
+ */
+template<class T> inline Vector3<T> operator^(const Vector3<T> &v, const Vector3<T> &w)
+{
+  Vector3<T> result;
+  result[0] = v[1] * w[2] - v[2] * w[1];
+  result[1] = v[2] * w[0] - v[0] * w[2];
+  result[2] = v[0] * w[1] - v[1] * w[0];
+
+  return result;
 }
 
 //--------------------------------------------------------------------
@@ -930,6 +1312,14 @@ using Vector3d   = Vector3<double>;
 using Vector3ul  = Vector3<unsigned long int>;
 using Vector3ull = Vector3<unsigned long long int>;
 using Vector3ll  = Vector3<long long int>;
+
+using Vector2ui  = Vector2<unsigned int>;
+using Vector2i   = Vector2<int>;
+using Vector2f   = Vector2<float>;
+using Vector2d   = Vector2<double>;
+using Vector2ul  = Vector2<unsigned long int>;
+using Vector2ull = Vector2<unsigned long long int>;
+using Vector2ll  = Vector2<long long int>;
 
 using Matrix3ui = Matrix3<unsigned int>;
 using Matrix3i  = Matrix3<int>;

@@ -29,11 +29,11 @@ include_directories(
 set (SOURCES
   # project files
   ${SOURCES}
-  ${RESOURCES}
   main.cpp
   Mesh.cpp
   TGA.cpp
+  Draw.cpp
+  Utils.cpp
 )
 
 add_executable(renderer ${SOURCES})
-#target_link_libraries (OGGExtractor ${CORE_EXTERNAL_LIBS})

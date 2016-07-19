@@ -19,67 +19,49 @@
 
 // Project
 #include "Mesh.h"
-#include "TGA.h"
+#include "Draw.h"
+#include "Utils.h"
 
 // C++
 #include <iostream>
 #include <memory>
 
 using namespace Image;
-
-void line(int x0, int y0, int x1, int y1, TGA &image, Color color)
-{
-  bool steep = false;
-  if (std::abs(x0 - x1) < std::abs(y0 - y1))
-  {
-    std::swap(x0, y0);
-    std::swap(x1, y1);
-    steep = true;
-  }
-
-  if (x0 > x1)
-  {
-    std::swap(x0, x1);
-    std::swap(y0, y1);
-  }
-
-  for (int x = x0; x <= x1; x++)
-  {
-    float t = (x - x0) / (float) (x1 - x0);
-    int y = y0 * (1. - t) + y1 * t;
-    if (steep)
-    {
-      image.set(y, x, color);
-    }
-    else
-    {
-      image.set(x, y, color);
-    }
-  }
-}
+using namespace Draw;
+using namespace Utils;
 
 int main(int argc, char *argv[])
 {
   auto mesh  = Mesh::read_Wavefront("obj/african_head/african_head.obj");
-  short int width = 800;
-  short int height = 800;
-  auto white = Color(255,255,255);
+  short int width = 1000;
+  short int height = 1000;
+  Vector3f light_dir(0,0,-1);
 
   auto image = std::make_shared<TGA>(width, height, TGA::RGB);
+
+  Timer timer("Draw");
 
   for (unsigned long i = 0; i < mesh->faces_num(); i++)
   {
     auto face = mesh->getFace(i);
-    for (int j = 0; j < 3; j++)
-    {
-      auto v0 = mesh->getVertex(face[j]);
-      auto v1 = mesh->getVertex(face[(j + 1) % 3]);
-      int x0 = (v0[0] + 1.) * width / 2.;
-      int y0 = (v0[1] + 1.) * height / 2.;
-      int x1 = (v1[0] + 1.) * width / 2.;
-      int y1 = (v1[1] + 1.) * height / 2.;
 
-      line(x0, y0, x1, y1, *image, white);
+    Vector2i screen_coords[3];
+    Vector3f world_coords[3];
+    for (int j: {0,1,2})
+    {
+      auto v = mesh->getVertex(face[j]);
+      screen_coords[j] = Vector2i((v[0] + 1.) * width / 2., (v[1] + 1.) * height / 2.);
+      world_coords[j] = v;
+    }
+
+    auto normal = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
+    normal.normalize();
+    float intensity = normal * light_dir;
+    if (intensity > 0)
+    {
+      if(intensity > 1) intensity = 1;
+
+      triangle(screen_coords, Color(intensity * 255, intensity * 255, intensity * 255, 255), *image);
     }
   }
 
