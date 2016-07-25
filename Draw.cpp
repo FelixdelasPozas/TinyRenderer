@@ -82,17 +82,17 @@ Vector3f barycentric(Vector3f *pts, const Vector3f &P)
 
   auto u = s[0] ^ s[1];
 
-  if (std::abs(u[2]) > 1e-2)
+  // dont forget that u[2] is integer. If it is zero then triangle ABC is degenerate
+  if (std::abs(u[2]) <= 0)
   {
-    // dont forget that u[2] is integer. If it is zero then triangle ABC is degenerate
-    return Vector3f(1.f - (u[0] + u[1]) / u[2], u[1] / u[2], u[0] / u[2]);
+    return Vector3f(-1, 1, 1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
   }
 
-  return Vector3f(-1, 1, 1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
+  return Vector3f(1.f - (u[0] + u[1]) / u[2], u[1] / u[2], u[0] / u[2]);
 }
 
 //--------------------------------------------------------------------
-void Draw::triangle(Vector3f *pts, std::shared_ptr<zBuffer> buffer, const Image::Color &color, Image::TGA &image)
+void Draw::triangle(Vector3f *pts, std::shared_ptr<zBuffer> buffer, const float intensity, Image::TGA &image, Vector2f *uv, Image::TGA &texture)
 {
   const auto width  = image.getWidth();
   const auto height = image.getHeight();
@@ -122,13 +122,19 @@ void Draw::triangle(Vector3f *pts, std::shared_ptr<zBuffer> buffer, const Image:
       auto bc_screen = barycentric(screen_coords, P);
 
       if (bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0) continue;
+
       P[2] = 0;
       for (int i = 0; i < 3; i++) P[2] += pts[i][2] * bc_screen[i];
 
       if (buffer->get(P[0], P[1]) < P[2])
       {
+        auto fPoint = (uv[0]*bc_screen[0]) + (uv[1]*bc_screen[1]) + (uv[2]*bc_screen[2]);
+        auto iPoint = Vector2i{fPoint[0]*texture.getWidth(), fPoint[1]*texture.getHeight()};
+        auto tColor = texture.get(iPoint[0], iPoint[1]);
+        auto iColor = Color(tColor.r*intensity, tColor.g*intensity, tColor.b*intensity, tColor.a*intensity);
+
         buffer->set(P[0], P[1], P[2]);
-        image.set(P[0], P[1], color);
+        image.set(P[0], P[1], iColor);
       }
     }
   }

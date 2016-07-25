@@ -45,11 +45,13 @@ namespace Draw
   /** \brief Draws a given triangle in the given color on the given image.
    * \param[in] pts pointer to 3d triangle points.
    * \param[inout] buffer z-buffer vector.
-   * \param[in] color triangle color.
+   * \param[in] intensity color intensity.
    * \param[inout] image TGA image raw pointer.
+   * \param[in] uv uv coords of vertices.
+   * \param[in] texture triangle texture.
    *
    */
-  void triangle(Vector3f *wPts, std::shared_ptr<Utils::zBuffer> buffer, const Image::Color &color, Image::TGA &image);
+  void triangle(Vector3f *wPts, std::shared_ptr<Utils::zBuffer> buffer, const float intensity, Image::TGA &image, Vector2f *uv, Image::TGA &texture);
 
   /** \brief Helper method to covert world coordinates to screen coordinates.
    * \param[in] coords world coordinates vector.

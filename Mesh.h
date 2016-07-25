@@ -72,16 +72,43 @@ class Mesh
     Vector3f getVertex(unsigned long idx)
     { return m_vertices[idx]; }
 
-    /** \brief Returns the face with the given index in the faces list.
+    /** \brief Returns the vertices list of the given face index in the faces list.
      * \param[in] idx index.
      *
      */
     std::vector<unsigned long> getFace(unsigned long idx)
-    { return m_faces[idx]; }
+    { return m_faces[idx]._vertex; }
+
+    /** \brief Returns the texels list of the given face index in the faces list.
+     * \param[in] idx index.
+     *
+     */
+    std::vector<unsigned long> getTexel(unsigned long idx)
+    { return m_faces[idx]._uv; }
+
+    /** \brief Returns the texture coordinates for the given index.
+     *
+     */
+    Vector2f getuv(unsigned long idx)
+    { return m_uv[idx]; }
+
+    /** \brief Returns the normal vector of the given vertex index.
+     * \param[in] idx index.
+     *
+     */
+    Vector3f getNormal(unsigned long idx)
+    { return m_normals[idx]; }
 
   private:
     using vertex = Vector3f;
-    using face   = std::vector<unsigned long>;
+    using normal = Vector3f;
+    using uv     = Vector2f;
+    struct face
+    {
+      std::vector<unsigned long> _vertex;
+      std::vector<unsigned long> _uv;
+      std::vector<unsigned long> _normal;
+    };
 
     /** \brief Adds a vertex to the mesh.
      * \param[in] x vertex x coordinate.
@@ -98,27 +125,47 @@ class Mesh
     void addVertex(const vertex &v);
 
     /** \brief Adds a face to the mesh.
-     * \param[in] v1 index of the first triangle vertex.
-     * \param[in] v2 index of the second triangle vertex.
-     * \param[in] v3 index of the third triangle vertex.
-     *
-     */
-    void addFace(const unsigned long v1, const unsigned long v2, const unsigned long v3);
-
-
-    /** \brief Adds a face to the mesh.
      * \param[in] f face.
      *
      */
     void addFace(const face &f);
+
+    /** \brief Adds a texture coordinate to the mesh.
+     * \param[in] u texture u coordinate.
+     * \param[in] v texture v coordinate.
+     *
+     */
+    void adduv(const double u, const double v);
+
+    /** \brief Adds a texture coordinate to the mesh.
+     * \param[in] t texture coordinates.
+     *
+     */
+    void adduv(const uv &t);
+
+    /** \brief Adds a normal to the mesh.
+     * \param[in] x normal x coordinate.
+     * \param[in] y normal y coordinate.
+     * \param[in] z normal z coordinate.
+     *
+     */
+    void addNormal(const double x, const double y, const double z);
+
+    /** \brief Adds a normal to the mesh.
+     * \param[in] n normal vector.
+     *
+     */
+    void addNormal(const normal &n);
 
     /** \brief Mesh class constructor.
      *
      */
     explicit Mesh();
 
-    std::vector<vertex> m_vertices; /** mesh vertex vector. */
-    std::vector<face>   m_faces;    /** mesh faces vector.  */
+    std::vector<vertex> m_vertices;  /** mesh vertex vector.              */
+    std::vector<face>   m_faces;     /** mesh faces vector.               */
+    std::vector<uv>     m_uv;        /** texture coordinates of vertices. */
+    std::vector<normal> m_normals;   /** face normals.                    */
 };
 
 #endif // MESH_H_

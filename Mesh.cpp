@@ -64,20 +64,51 @@ std::shared_ptr<Mesh> Mesh::read_Wavefront(const std::string &filename)
       if (!line.compare(0, 2, "f "))
       {
         face f;
-        int itrash, idx;
+        int vIdx, tIdx, nIdx;
         iss >> trash;
-        while (iss >> idx >> trash >> itrash >> trash >> itrash)
+        while (iss >> vIdx >> trash >> tIdx >> trash >> nIdx)
         {
-          idx--; // in wavefront obj all indices start at 1, not zero
-          f.push_back(idx);
+          // in wavefront obj all indices start at 1, not zero
+          f._vertex.push_back(--vIdx);
+          f._uv.push_back(--tIdx);
+          f._normal.push_back(--nIdx);
         }
 
         mesh->addFace(f);
       }
+      else
+      {
+        if(!line.compare(0, 4, "vt  "))
+        {
+          iss >> trash >> trash;
+          uv t;
+          for (int i = 0; i < 2; i++)
+          {
+            iss >> t[i];
+          }
+
+          mesh->adduv(t);
+        }
+        else
+        {
+          if(!line.compare(0, 4, "vn  "))
+          {
+            iss >> trash >> trash;
+            normal v;
+            for (int i = 0; i < 3; i++)
+            {
+              iss >> v[i];
+            }
+
+            mesh->addNormal(v);
+          }
+        }
+      }
     }
   }
 
-  std::cout << "read: " << filename << " vertices: " << mesh->m_vertices.size() << " faces: " << mesh->m_faces.size() << std::endl << std::flush;
+  std::cout << "read: " << filename << " vertices: " << mesh->m_vertices.size() << " faces: " << mesh->m_faces.size();
+  std::cout << " uv: " << mesh->m_uv.size() << " normals: " << mesh->m_normals.size() << std::endl << std::flush;
 
   return std::shared_ptr<Mesh>{mesh};
 }
@@ -91,22 +122,36 @@ bool Mesh::write_Wavefront(const std::string &filename)
   if (out.fail()) return false;
 
   out << "# vertices list" << std::endl;
-
   for(auto v: m_vertices)
   {
     out << "v " << v[0] << " " << v[1] << " " << v[2] << std::endl;
+  }
+
+  out << "# vt list" << std::endl;
+  for(auto t: m_uv)
+  {
+    out << "vt  " << t[0] << " " << t[1] << " " << t[2] << std::endl;
+  }
+
+  out << "# normals list" << std::endl;
+  for(auto n: m_normals)
+  {
+    out << "vn  " << n[0] << " " << n[1] << " " << n[2] << std::endl;
   }
 
   out << "# faces list" << std::endl;
   for(auto f: m_faces)
   {
     out << "f ";
-    for(auto idx: f)
+    for(unsigned int i = 0; i < f._vertex.size(); ++i)
     {
-      out << idx << " ";
+      out << f._vertex[i] << "/" << f._uv[i] << " " << f._normal[i] << (i == f._vertex.size()-1 ? "" : " ");
     }
     out << std::endl;
   }
+
+  out.flush();
+  out.close();
 
   std::cout << "write: " << filename << " vertices: " << m_vertices.size() << " faces: " << m_faces.size() << std::endl << std::flush;
 
@@ -126,15 +171,31 @@ void Mesh::addVertex(const vertex &v)
 }
 
 //--------------------------------------------------------------------
-void Mesh::addFace(const unsigned long v1, const unsigned long v2, const unsigned long v3)
-{
-  assert(v1 < m_vertices.size() && v2 < m_vertices.size() && v3 < m_vertices.size());
-
-  addFace(face{v1,v2,v3});
-}
-
-//--------------------------------------------------------------------
 void Mesh::addFace(const face &f)
 {
   m_faces.push_back(f);
+}
+
+//--------------------------------------------------------------------
+void Mesh::adduv(const double u, const double v)
+{
+  adduv(uv{u,v});
+}
+
+//--------------------------------------------------------------------
+void Mesh::adduv(const uv &t)
+{
+  m_uv.push_back(t);
+}
+
+//--------------------------------------------------------------------
+void Mesh::addNormal(const double x, const double y, const double z)
+{
+  addNormal(normal{x,y,z});
+}
+
+//--------------------------------------------------------------------
+void Mesh::addNormal(const normal &n)
+{
+  m_normals.push_back(n);
 }

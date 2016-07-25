@@ -43,20 +43,27 @@ int main(int argc, char *argv[])
   Vector3f light_dir(0,0,-1);
 
   auto image   = std::make_shared<TGA>(width, height, TGA::RGB);
+  auto imagetx = TGA::read("obj/african_head/african_head_diffuse.tga");
+  imagetx->flipVertically();
+  assert(imagetx);
   auto zBuffer = std::make_shared<Utils::zBuffer>(width, height);
 
   BlockTimer timer("Draw");
 
-#pragma omp parallel for
+  #pragma omp parallel for
   for (unsigned long i = 0; i < mesh->faces_num(); i++)
   {
     auto face = mesh->getFace(i);
+    auto uvs  = mesh->getTexel(i);
 
     Vector3f world_coords[3];
+    Vector2f uv_coords[3];
+    Vector2f texels[3];
+
     for (int j: {0,1,2})
     {
-      auto v = mesh->getVertex(face[j]);
-      world_coords[j] = v;
+      world_coords[j] = mesh->getVertex(face[j]);
+      uv_coords[j]    = mesh->getuv(uvs[j]);
     }
 
     auto normal = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
@@ -68,7 +75,7 @@ int main(int argc, char *argv[])
     {
       if(intensity > 1) intensity = 1;
 
-      triangle(world_coords, zBuffer, Color(intensity * 255, intensity * 255, intensity * 255, 255), *image);
+      triangle(world_coords, zBuffer, intensity, *image, uv_coords, *imagetx);
     }
   }
 
