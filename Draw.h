@@ -24,6 +24,11 @@
 #include "TGA.h"
 #include "Algebra.h"
 
+namespace Utils
+{
+  class zBuffer;
+}
+
 namespace Draw
 {
   /** \brief Draws the line (x0,y0)-(x1,y1) in the given color on the given image.
@@ -38,12 +43,21 @@ namespace Draw
   void line(int x0, int y0, int x1, int y1, Image::TGA &image, const Image::Color &color);
 
   /** \brief Draws a given triangle in the given color on the given image.
-   * \param[in] pts pointer to triangle points.
+   * \param[in] pts pointer to 3d triangle points.
+   * \param[inout] buffer z-buffer vector.
    * \param[in] color triangle color.
    * \param[inout] image TGA image raw pointer.
    *
    */
-  void triangle(Vector2i *pts, const Image::Color &color, Image::TGA &image);
+  void triangle(Vector3f *wPts, std::shared_ptr<Utils::zBuffer> buffer, const Image::Color &color, Image::TGA &image);
+
+  /** \brief Helper method to covert world coordinates to screen coordinates.
+   * \param[in] coords world coordinates vector.
+   * \param[in] width screen width.
+   * \param[in] height screen height.
+   *
+   */
+  const Vector3f toScreen(const Vector3f coords, const unsigned short width, const unsigned short height);
 
 } // namespace Draw
 

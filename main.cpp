@@ -23,8 +23,11 @@
 #include "Utils.h"
 
 // C++
+#include <array>
 #include <iostream>
+#include <limits>
 #include <memory>
+#include <string>
 
 using namespace Image;
 using namespace Draw;
@@ -33,40 +36,47 @@ using namespace Utils;
 int main(int argc, char *argv[])
 {
   auto mesh  = Mesh::read_Wavefront("obj/african_head/african_head.obj");
+  if(!mesh) return 1;
+
   short int width = 1000;
   short int height = 1000;
   Vector3f light_dir(0,0,-1);
 
-  auto image = std::make_shared<TGA>(width, height, TGA::RGB);
+  auto image   = std::make_shared<TGA>(width, height, TGA::RGB);
+  auto zBuffer = std::make_shared<Utils::zBuffer>(width, height);
 
-  Timer timer("Draw");
+  BlockTimer timer("Draw");
 
+#pragma omp parallel for
   for (unsigned long i = 0; i < mesh->faces_num(); i++)
   {
     auto face = mesh->getFace(i);
 
-    Vector2i screen_coords[3];
     Vector3f world_coords[3];
     for (int j: {0,1,2})
     {
       auto v = mesh->getVertex(face[j]);
-      screen_coords[j] = Vector2i((v[0] + 1.) * width / 2., (v[1] + 1.) * height / 2.);
       world_coords[j] = v;
     }
 
     auto normal = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
     normal.normalize();
+
     float intensity = normal * light_dir;
+
     if (intensity > 0)
     {
       if(intensity > 1) intensity = 1;
 
-      triangle(screen_coords, Color(intensity * 255, intensity * 255, intensity * 255, 255), *image);
+      triangle(world_coords, zBuffer, Color(intensity * 255, intensity * 255, intensity * 255, 255), *image);
     }
   }
 
   image->flipVertically(); // i want to have the origin at the left bottom corner of the image
   image->write("output.tga");
+
+
+  zBuffer->write("zbuffer.tga");
 
 	return 0;
 }
