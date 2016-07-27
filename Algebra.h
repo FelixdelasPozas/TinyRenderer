@@ -485,7 +485,6 @@ template<class T, unsigned int N> class Matrix
     Matrix(const Matrix<T, N> &a)
     {
       data.reserve(N);
-
       for(unsigned int i = 0; i < N; ++i)
       {
         data.push_back(a.row(i));
@@ -658,19 +657,89 @@ template<class T, unsigned int N> class Matrix
     /** \brief Transpose operator.
      *
      */
-    Matrix<T, N>& transpose()
+    Matrix<T, N> transpose()
     {
-      Matrix<T, N> copy(*this);
+      Matrix<T, N> result;
 
       for(unsigned int i = 0; i < N; ++i)
       {
         for(unsigned int j = 0; j < N; ++j)
         {
-          data[j][i] = copy[i][j];
+          result[i][j] = data[j][i];
         }
       }
 
-      return *this;
+      return result;
+    }
+
+    Matrix<T, N> inverse()
+    {
+      // augmenting the square matrix with the identity matrix of the same dimensions.
+      std::vector<Vector<T, 2*N>> result;
+      result.reserve(N);
+      for (unsigned int i = 0; i < N; i++)
+      {
+        result.push_back(Vector<T,2*N>());
+      }
+
+      for (unsigned int i = 0; i < N; i++)
+      {
+        result[i][i+N] = 1;
+
+        for (unsigned int j = 0; j < N; j++)
+        {
+          result[i][j]   = data[i][j];
+        }
+      }
+
+      // first pass
+      for (unsigned int i = 0; i < N-1; i++)
+      {
+        // normalize the first row
+        for (int j = (2*N)-1; j >= 0; j--)
+        {
+          result[i][j] /= result[i][i];
+        }
+        for (unsigned int k = i + 1; k < N; k++)
+        {
+          float coeff = result[k][i];
+          for (unsigned int j = 0; j < 2*N; j++)
+          {
+            result[k][j] -= result[i][j] * coeff;
+          }
+        }
+      }
+
+      // normalize the last row
+      for (unsigned int j = (2*N) - 1; j >= N-1; j--)
+      {
+        result[N-1][j] /= result[N-1][N-1];
+      }
+
+      // second pass
+      for (int i = N-1; i > 0; i--)
+      {
+        for (int k = i - 1; k >= 0; k--)
+        {
+          float coeff = result[k][i];
+          for (unsigned int j = 0; j < 2*N; j++)
+          {
+            result[k][j] -= result[i][j] * coeff;
+          }
+        }
+      }
+
+      // cut the identity matrix back
+      Matrix<T,N> truncate;
+      for (unsigned int i = 0; i < N; i++)
+      {
+        for (unsigned int j = 0; j < N; j++)
+        {
+          truncate[i][j] = result[i][j + N];
+        }
+      }
+
+      return truncate;
     }
 
     /** \brief Returns the sub-matrix of the position (i,j)

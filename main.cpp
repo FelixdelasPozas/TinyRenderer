@@ -35,6 +35,16 @@ using namespace Draw;
 using namespace Utils;
 
 //--------------------------------------------------------------------
+Matrix4f createProjection(const float proj)
+{
+  Matrix4f projection;
+  projection.identity();
+  projection[3][2] = proj;
+
+  return projection;
+}
+
+//--------------------------------------------------------------------
 Matrix4f createModelView(const Vector3f &eye, const Vector3f &center, const Vector3f &up)
 {
   auto z = (eye - center).normalize();
@@ -84,12 +94,10 @@ int main(int argc, char *argv[])
   Vector3f center{0,0,0};
   Vector3f up{0,1,0};
 
-  Matrix4f Projection;
-  Projection.identity();
-  Projection[3][2] = -1.f/(eye-center).norm();
-
-  auto ViewPort = createViewport(width/8, height/8, width*3/4, height*3/4);
-  auto ModelView = createModelView(eye, center, up);
+  auto Projection      = createProjection(-1.f/(eye-center).norm());
+  auto ViewPort        = createViewport(width/8, height/8, width*3/4, height*3/4);
+  auto ModelView       = createModelView(eye, center, up);
+  auto normalTransform = (Projection * ModelView).transpose().inverse();
 
   auto image   = std::make_shared<TGA>(width, height, TGA::RGB);
   auto imagetx = TGA::read("obj/african_head/african_head_diffuse.tga");
@@ -113,9 +121,9 @@ int main(int argc, char *argv[])
     for (int j: {0,1,2})
     {
       world_coords[j]  = mesh->getVertex(face[j]);
-      screen_coords[j] = (ViewPort * (Projection * (ModelView * world_coords[j].augment()))).project();
+      screen_coords[j] = (ViewPort * Projection * ModelView * world_coords[j].augment()).project();
       uv_coords[j]     = mesh->getuv(uvs[j]);
-      intensities[j]   = mesh->getNormal(face[j]) * light_dir;
+      intensities[j]   = (normalTransform * mesh->getNormal(face[j]).augment()).project() * light_dir;
     }
 
     triangle(world_coords, screen_coords, intensities, zBuffer, *image, uv_coords, *imagetx);
