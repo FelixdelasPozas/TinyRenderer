@@ -63,21 +63,15 @@ void Draw::line(int x0, int y0, int x1, int y1, TGA &image, const Color &color)
 }
 
 //--------------------------------------------------------------------
-const Vector3f Draw::toScreen(const Vector3f coords, const unsigned short screen_width, const unsigned short screen_height)
-{
-  return Vector3f{std::floor((coords[0]+1.)*screen_width/2.+.5), std::floor((coords[1]+1.)*screen_height/2.+.5), static_cast<double>(coords[2])};
-}
-
-//--------------------------------------------------------------------
 Vector3f barycentric(Vector3f *pts, const Vector3f &P)
 {
   Vector3f s[2];
 
   for (auto i: {0,1})
   {
-    s[i][0] = pts[2][i] - pts[0][i];
-    s[i][1] = pts[1][i] - pts[0][i];
-    s[i][2] = pts[0][i] - P[i];
+    s[i][0] = static_cast<int>(pts[2][i]) - static_cast<int>(pts[0][i]);
+    s[i][1] = static_cast<int>(pts[1][i]) - static_cast<int>(pts[0][i]);
+    s[i][2] = static_cast<int>(pts[0][i]) - static_cast<int>(P[i]);
   }
 
   auto u = s[0] ^ s[1];
@@ -85,31 +79,28 @@ Vector3f barycentric(Vector3f *pts, const Vector3f &P)
   // dont forget that u[2] is integer. If it is zero then triangle ABC is degenerate
   if (std::abs(u[2]) <= 0)
   {
-    return Vector3f(-1, 1, 1); // in this case generate negative coordinates, it will be thrown away by the rasterizator
+    return Vector3f{-1, 1, 1}; // in this case generate negative coordinates, it will be thrown away by the rasterizator
   }
 
-  return Vector3f(1.f - (u[0] + u[1]) / u[2], u[1] / u[2], u[0] / u[2]);
+  return Vector3f{1.f - (u[0] + u[1]) / u[2], u[1] / u[2], u[0] / u[2]};
 }
 
 //--------------------------------------------------------------------
-void Draw::triangle(Vector3f *pts, std::shared_ptr<zBuffer> buffer, const float intensity, Image::TGA &image, Vector2f *uv, Image::TGA &texture)
+void Draw::triangle(Vector3f *wPts, Vector3f *sPts, std::shared_ptr<zBuffer> buffer, const float intensity, Image::TGA &image, Vector2f *uv, Image::TGA &texture)
 {
   const auto width  = image.getWidth();
   const auto height = image.getHeight();
 
-  Vector3f screen_coords[3];
-  for(auto i: {0,1,2}) screen_coords[i] = toScreen(pts[i], width,  height);
-
-  Vector2f min( std::numeric_limits<float>::max(),  std::numeric_limits<float>::max());
-  Vector2f max(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
-  Vector2f clamp(width-1, height-1);
+  Vector2i min{ std::numeric_limits<int>::max(),  std::numeric_limits<int>::max()};
+  Vector2i max{-std::numeric_limits<int>::max(), -std::numeric_limits<int>::max()};
+  Vector2i clamp{width-1, height-1};
 
   for (int i: {0,1,2})
   {
     for (int j: {0,1})
     {
-      min[j] = std::max(0.f, std::min(min[j], screen_coords[i][j]));
-      max[j] = std::min(clamp[j], std::max(max[j], screen_coords[i][j]));
+      min[j] = std::max(0, std::min(min[j], static_cast<int>(sPts[i][j])));
+      max[j] = std::min(clamp[j], std::max(max[j], static_cast<int>(sPts[i][j])));
     }
   }
 
@@ -119,12 +110,12 @@ void Draw::triangle(Vector3f *pts, std::shared_ptr<zBuffer> buffer, const float 
   {
     for (P[1] = min[1]; P[1] <= max[1]; ++P[1])
     {
-      auto bc_screen = barycentric(screen_coords, P);
+      auto bc_screen = barycentric(sPts, P);
 
       if (bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0) continue;
 
       P[2] = 0;
-      for (int i = 0; i < 3; i++) P[2] += pts[i][2] * bc_screen[i];
+      for (int i = 0; i < 3; i++) P[2] += wPts[i][2] * bc_screen[i];
 
       if (buffer->get(P[0], P[1]) < P[2])
       {

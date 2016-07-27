@@ -21,6 +21,7 @@
 #include "Mesh.h"
 #include "Draw.h"
 #include "Utils.h"
+#include "Algebra.h"
 
 // C++
 #include <array>
@@ -33,6 +34,20 @@ using namespace Image;
 using namespace Draw;
 using namespace Utils;
 
+const int depth = 255;
+
+void viewport(int x, int y, int w, int h, Matrix4f &m)
+{
+  m.identity();
+  m[0][3] = x + w / 2.f;
+  m[1][3] = y + h / 2.f;
+  m[2][3] = depth / 2.f;
+
+  m[0][0] = w / 2.f;
+  m[1][1] = h / 2.f;
+  m[2][2] = depth / 2.f;
+}
+
 int main(int argc, char *argv[])
 {
   auto mesh  = Mesh::read_Wavefront("obj/african_head/african_head.obj");
@@ -40,7 +55,15 @@ int main(int argc, char *argv[])
 
   short int width = 1000;
   short int height = 1000;
-  Vector3f light_dir(0,0,-1);
+  Vector3f light_dir{0,0,-1};
+  Vector3f camera{0,0,3};
+
+  Matrix4f Projection;
+  Projection.identity();
+  Projection[3][2] = -1.f/camera[2];
+
+  Matrix4f ViewPort;
+  viewport(width/8, height/8, width*3/4, height*3/4, ViewPort);
 
   auto image   = std::make_shared<TGA>(width, height, TGA::RGB);
   auto imagetx = TGA::read("obj/african_head/african_head_diffuse.tga");
@@ -50,19 +73,20 @@ int main(int argc, char *argv[])
 
   BlockTimer timer("Draw");
 
-  #pragma omp parallel for
+//  #pragma omp parallel for
   for (unsigned long i = 0; i < mesh->faces_num(); i++)
   {
     auto face = mesh->getFace(i);
     auto uvs  = mesh->getTexel(i);
 
     Vector3f world_coords[3];
+    Vector3f screen_coords[3];
     Vector2f uv_coords[3];
-    Vector2f texels[3];
 
     for (int j: {0,1,2})
     {
       world_coords[j] = mesh->getVertex(face[j]);
+      screen_coords[j] = (ViewPort * (Projection * world_coords[j].augment())).project();
       uv_coords[j]    = mesh->getuv(uvs[j]);
     }
 
@@ -75,13 +99,12 @@ int main(int argc, char *argv[])
     {
       if(intensity > 1) intensity = 1;
 
-      triangle(world_coords, zBuffer, intensity, *image, uv_coords, *imagetx);
+      triangle(world_coords, screen_coords, zBuffer, intensity, *image, uv_coords, *imagetx);
     }
   }
 
   image->flipVertically(); // i want to have the origin at the left bottom corner of the image
   image->write("output.tga");
-
 
   zBuffer->write("zbuffer.tga");
 

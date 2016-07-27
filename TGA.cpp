@@ -154,7 +154,7 @@ std::shared_ptr<TGA> TGA::read(const std::string& filename)
     image->flipHorizontally();
   }
 
-  std::cerr << "read: " << filename << " : " << image->m_width << "x" << image->m_height << "/" << image->m_bpp * 8 << std::endl;
+  std::cout << "read: " << filename << " : " << image->m_width << "x" << image->m_height << "/" << image->m_bpp * 8 << std::endl;
 
   in.close();
   return image;

@@ -38,416 +38,67 @@ class algebra_error: public std::logic_error
 
 //--------------------------------------------------------------------
 // Vector class
-//
-template<class T> class Vector2
+template<class T, unsigned int N> class Vector
 {
   public:
-    /** \brief Vector2 default constructor.
+    /** \brief Vector class constructor.
      *
      */
-    Vector2()
+    Vector()
     {
-      data.reserve(2);
-      data.push_back(T(0));
-      data.push_back(T(0));
-    }
-
-    /** \brief Vector2 copy constructor.
-     * \param[in] v vector.
-     *
-     */
-    Vector2(const Vector2<T> &v)
-    {
-      data.push_back(v[0]);
-      data.push_back(v[1]);
-    }
-
-    /** \brief Vector2 value constructor.
-     * \param[in] value T value.
-     *
-     */
-    Vector2(const T &value)
-    {
-      data.push_back(value);
-      data.push_back(value);
-    }
-
-    /** \brief Vector2 multiple values constructor.
-     * \param[in] x T value.
-     * \param[in] y T value.
-     *
-     */
-    template<class X> Vector2(const X &x, const X &y)
-    {
-      data.push_back(static_cast<T>(x));
-      data.push_back(static_cast<T>(y));
-    }
-
-    /** \brief Scalar assignment operator.
-     * \param[in] value T value.
-     *
-     */
-    Vector2<T>& operator=(const T &value)
-    {
-      data[0] = data[1] = value;
-
-      return *this;
-    }
-
-    /** \brief Vector2 assignment operator.
-     * \param[in] v vector.
-     *
-     */
-    Vector2<T>& operator=(const Vector2<T> &v)
-    {
-      data[0] = v[0];
-      data[1] = v[1];
-
-      return *this;
-    }
-
-    /** \brief Logical operator ==
-     * \param[in] a vector.
-     * \param[in] b vector.
-     *
-     */
-    friend bool operator==(const Vector2<T> &a, const Vector2<T> &b)
-    {
-      for (auto i: {0,1})
+      data.reserve(N);
+      for(unsigned int i = 0; i < N; ++i)
       {
-        if (a[i] != b[i])
-        {
-          return false;
-        }
+        data.push_back(T(0));
       }
-
-      return true;
     }
 
-    /** \brief Logical operator !=
-     * \param[in] a vector.
-     * \param[in] b vector.
-     *
-     */
-    friend bool operator!=(const Vector2<T> &a, const Vector2<T> &b)
-    {
-      return !(a == b);
-    }
-
-    /** \brief Subscript operator
-     * \param[in] i index value.
-     *
-     */
-    inline T& operator[](int index)
-    {
-      assert((0 <= index) && (index < 2));
-
-      return data[index];
-    }
-
-    /** \brief Const subscript operator
-     * \param[in] i index value.
-     *
-     */
-    inline const T& operator[](int index) const
-    {
-      assert((0 <= index) && (index < 2));
-
-      return data[index];
-    }
-
-    /** \brief Unary operator +
-     *
-     */
-    inline const Vector2<T> operator+()
-    {
-      Vector2<T> result = *this;
-
-      return result;
-    }
-
-    /** \brief Unary operator -
-     *
-     */
-    inline const Vector2<T> operator-()
-    {
-      Vector2<T> result;
-      result.data[0] = -data[0];
-      result.data[1] = -data[1];
-
-      return result;
-    }
-
-    /** \brief Set values
-     * \param[in] x T value.
-     * \param[in] y T value.
-     *
-     */
-    template<class X> inline Vector2<T>& Set(const X &x, const X &y)
-    {
-      data[0] = static_cast<T>(x);
-      data[1] = static_cast<T>(y);
-
-      return *this;
-    }
-  private:
-    std::vector<T> data;
-};
-
-/** \brief operator<<
- * \param[in] stream iostream.
- * \param[in] a vector.
- *
- */
-template<class T> std::ostream& operator<<(std::ostream &stream, const Vector2<T> &v)
-{
-  stream << "[";
-  for (auto i: {0,1})
-  {
-    stream << v[i] << ((i == 2) ? "]" : ",");
-  }
-
-  return stream;
-}
-
-/** \brief operator* (scalar*vector)
- * \param[in] c T value.
- * \param[in] a vector.
- */
-template<class T> inline Vector2<T> operator*(const T &c, const Vector2<T> &v)
-{
-  Vector2<T> tmp(0);
-
-  for (auto i: {0,1})
-  {
-    tmp[i] = v[i] * c;
-  }
-
-  return tmp;
-}
-
-/** \brief operator* (vector*value)
- * \param[in] v vector.
- * \param[in] c T value.
- *
- */
-template<class T> inline Vector2<T> operator*(const Vector2<T> &v, const T &c)
-{
-  Vector2<T> tmp(0);
-
-  for (auto i: {0,1})
-  {
-    tmp[i] = v[i] * c;
-  }
-
-  return tmp;
-}
-
-/** \brief operator* (vector*value)
- * \param[in] v vector.
- * \param[in] c X value.
- *
- */
-template<class T, class X> inline Vector2<T> operator*(const Vector2<T> &v, const X &c)
-{
-  Vector2<T> tmp(0);
-
-  for (auto i: {0,1})
-  {
-    tmp[i] = v[i] * static_cast<T>(c);
-  }
-
-  return tmp;
-}
-
-/** \brief operator/ (vector/value)
- * \param[in] v vector.
- * \param[in] c T value.
- *
- */
-template<class T, class X> inline Vector2<T> operator/(const Vector2<T> &v, const X &c)
-{
-  if (c == T(0))
-  {
-    throw algebra_error("Vector2::operator/: division by zero");
-  }
-
-  Vector2<T> tmp(0);
-
-  for (auto i: {0,1})
-  {
-    tmp[i] = v[i] / static_cast<T>(c);
-  }
-
-  return tmp;
-}
-
-/** \brief operator+ (binary)
- * \param[in] a vector.
- * \param[in] b vector.
- *
- */
-template<class T> inline Vector2<T> operator+(const Vector2<T> &a, const Vector2<T> &b)
-{
-  Vector2<T> ret(0);
-
-  for (auto i: {0,1})
-  {
-    ret[i] = a[i] + b[i];
-  }
-
-  return ret;
-}
-
-/** \brief operator- (binary)
- * \param[in] a vector.
- * \param[in] b vector.
- *
- */
-template<class T> inline Vector2<T> operator-(const Vector2<T> &a, const Vector2<T> &b)
-{
-  Vector2<T> ret(0);
-
-  for (auto i: {0,1})
-  {
-    ret[i] = a[i] - b[i];
-  }
-
-  return ret;
-}
-
-/** \brief operator* (binary, dot product)
- * \param[in] a vector.
- * \param[in] b vector.
- *
- */
-template<class T> inline T operator*(const Vector2<T> &a, const Vector2<T> &b)
-{
-  T sum = 0;
-
-  for (auto i: {0,1})
-  {
-    sum += a[i] * b[i];
-  }
-
-  return sum;
-}
-
-/** \brief operator+= (binary)
- * \param[in] a vector.
- * \param[in] b vector.
- *
- */
-template<class T> inline Vector2<T> operator+=(Vector2<T> &a, const Vector2<T> &b)
-{
-  for (auto i: {0,1})
-  {
-    a[i] = a[i] + b[i];
-  }
-
-  return a;
-}
-
-/** \brief operator-= (binary)
- * \param[in] a vector.
- * \param[in] b vector.
- *
- */
-template<class T> inline Vector2<T> operator-=(Vector2<T> &a, const Vector2<T> &b)
-{
-  for (auto i: {0,1})
-  {
-    a[i] = a[i] - b[i];
-  }
-
-  return a;
-}
-
-/** \brief operator*= (vector*value)
- * \param[in] a vector.
- * \param[in] c X value.
- *
- */
-template<class T> inline Vector2<T> operator*=(const Vector2<T> &v, const T &c)
-{
-  for (auto i: {0,1})
-  {
-    v[i] = v[i] * c;
-  }
-}
-
-/** \brief operator*= (vector*value)
- * \param[in] a vector.
- * \param[in] c X value.
- *
- */
-template<class T, class X> inline Vector2<T> operator*=(const Vector2<T> &v, const X &c)
-{
-  for (auto i: {0,1})
-  {
-    v[i] = v[i] * static_cast<T>(c);
-  }
-}
-
-//--------------------------------------------------------------------
-// Vector 3 class
-//
-template<class T> class Vector3
-{
-  public:
-    /** \brief Vector3 default constructor.
-     *
-     */
-    Vector3()
-    {
-      data.reserve(3);
-      data.push_back(T(0));
-      data.push_back(T(0));
-      data.push_back(T(0));
-    }
-
-    /** \brief Vector3 vector constructor.
+    /** \brief Vector copy constructor.
      * \param[in] v vector.
      *
      */
-    Vector3(const Vector3<T> &v)
+    Vector(const Vector<T, N> &v)
     {
-      data.push_back(v[0]);
-      data.push_back(v[1]);
-      data.push_back(v[2]);
+      data.reserve(N);
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        data.push_back(v[i]);
+      }
     }
 
-    /** \brief Vector3 value constructor.
+    /** \brief Vector value constructor.
      * \param[in] value T value.
      *
      */
-    Vector3(const T &value)
+    Vector(const T &value)
     {
-      data.push_back(value);
-      data.push_back(value);
-      data.push_back(value);
+      data.reserve(N);
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        data.push_back(value);
+      }
     }
 
-    /** \brief Vector3 multiple values constructor.
-     * \param[in] x T value.
-     * \param[in] y T value.
-     * \param[in] z T value.
+    /** \brief Vector initializer list constructor.
+     * \param[in] list initializer list.
      *
      */
-    template<class X> Vector3(const X &x, const X &y, const X &z)
+    template<class P> Vector(std::initializer_list<P> list)
     {
-      data.push_back(static_cast<T>(x));
-      data.push_back(static_cast<T>(y));
-      data.push_back(static_cast<T>(z));
+      assert(list.size() == N);
+      data = std::vector<T>(begin(list), end(list));
     }
 
     /** \brief Scalar assignment operator.
      * \param[in] value T value.
      *
      */
-    Vector3<T>& operator=(const T &value)
+    Vector<T, N>& operator=(const T &value)
     {
-      data[0] = data[1] = data[2] = value;
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        data[i] = value;
+      }
 
       return *this;
     }
@@ -456,11 +107,26 @@ template<class T> class Vector3
      * \param[in] v vector.
      *
      */
-    Vector3<T>& operator=(const Vector3<T> &v)
+    Vector<T, N>& operator=(const Vector<T, N> &v)
     {
-      data[0] = v[0];
-      data[1] = v[1];
-      data[2] = v[2];
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        data[i] = v[i];
+      }
+
+      return *this;
+    }
+
+    /** \brief Vector assignment operator.
+     * \param[in] v vector.
+     *
+     */
+    template<class X> Vector<T, N>& operator=(const Vector<X, N> &v)
+    {
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        data[i] = T(v[i]);
+      }
 
       return *this;
     }
@@ -470,9 +136,9 @@ template<class T> class Vector3
      * \param[in] b vector.
      *
      */
-    friend bool operator==(const Vector3<T> &a, const Vector3<T> &b)
+    friend bool operator==(const Vector<T, N> &a, const Vector<T, N> &b)
     {
-      for (auto i: {0,1,2})
+      for(unsigned int i = 0; i < N; ++i)
       {
         if (a[i] != b[i])
         {
@@ -488,7 +154,7 @@ template<class T> class Vector3
      * \param[in] b vector.
      *
      */
-    friend bool operator!=(const Vector3<T> &a, const Vector3<T> &b)
+    friend bool operator!=(const Vector<T, N> &a, const Vector<T, N> &b)
     {
       return !(a == b);
     }
@@ -497,9 +163,9 @@ template<class T> class Vector3
      * \param[in] i index value.
      *
      */
-    inline T& operator[](int index)
+    inline T& operator[](unsigned int index)
     {
-      assert((0 <= index) && (index < 3));
+      assert((0 <= index) && (index < N));
 
       return data[index];
     }
@@ -508,9 +174,9 @@ template<class T> class Vector3
      * \param[in] i index value.
      *
      */
-    inline const T& operator[](int index) const
+    inline const T& operator[](unsigned int index) const
     {
-      assert((0 <= index) && (index < 3));
+      assert((0 <= index) && (index < N));
 
       return data[index];
     }
@@ -518,9 +184,9 @@ template<class T> class Vector3
     /** \brief Unary operator +
      *
      */
-    inline const Vector3<T> operator+()
+    inline const Vector<T, N> operator+()
     {
-      Vector3<T> result = *this;
+      Vector<T, N> result = *this;
 
       return result;
     }
@@ -528,38 +194,56 @@ template<class T> class Vector3
     /** \brief Unary operator -
      *
      */
-    inline const Vector3<T> operator-()
+    inline const Vector<T, N> operator-()
     {
-      Vector3<T> result;
-      result.data[0] = -data[0];
-      result.data[1] = -data[1];
-      result.data[2] = -data[2];
+      Vector<T, N> result;
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        result.data[i] = -data[i];
+      }
 
       return result;
     }
 
-    /** \brief Set values
-     * \param[in] x T value.
-     * \param[in] y T value.
-     * \param[in] z T value.
-     *
-     */
-    template<class X> inline Vector3<T>& Set(const X &x, const X &y, const X &z)
+    inline Vector<T, N+1> augment() const
     {
-      data[0] = static_cast<T>(x);
-      data[1] = static_cast<T>(y);
-      data[2] = static_cast<T>(z);
-      return *this;
+      Vector<T, N+1> result;
+
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        result[i] = data[i];
+      }
+      result[N] = T(1);
+
+      return result;
     }
 
-    /** \brief Normalize vector.
-     *
-     */
-    inline Vector3<T>& normalize()
+    inline Vector<T, N-1> project() const
     {
-      auto norm = std::sqrt(data[0]*data[0]+data[1]*data[1]+data[2]*data[2]);
+      Vector<T, N-1> result;
 
-      *this = (*this)*(1/norm);
+      for(unsigned int i = 0; i < N-1; ++i)
+      {
+        result[i] = data[i]/data[N-1];
+      }
+
+      return result;
+    }
+
+    inline Vector<T, N>& normalize()
+    {
+      float result = 0;
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        result += data[i]*data[i];
+      }
+
+      result = std::sqrt(result);
+
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        data[i] = data[i] * (1./result);
+      }
 
       return *this;
     }
@@ -573,12 +257,12 @@ template<class T> class Vector3
  * \param[in] a vector.
  *
  */
-template<class T> std::ostream& operator<<(std::ostream &stream, const Vector3<T> &v)
+template<class T, unsigned int N> std::ostream& operator<<(std::ostream &stream, const Vector<T, N> &v)
 {
   stream << "[";
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
-    stream << v[i] << ((i == 2) ? "]" : ",");
+    stream << v[i] << ((i == N-1) ? "]" : ",");
   }
 
   return stream;
@@ -588,11 +272,11 @@ template<class T> std::ostream& operator<<(std::ostream &stream, const Vector3<T
  * \param[in] c T value.
  * \param[in] a vector.
  */
-template<class T> inline Vector3<T> operator*(const T &c, const Vector3<T> &v)
+template<class T, unsigned int N> inline Vector<T, N> operator*(const T &c, const Vector<T, N> &v)
 {
-  Vector3<T> tmp(0);
+  Vector<T, N> tmp(0);
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     tmp[i] = v[i] * c;
   }
@@ -605,11 +289,11 @@ template<class T> inline Vector3<T> operator*(const T &c, const Vector3<T> &v)
  * \param[in] c T value.
  *
  */
-template<class T> inline Vector3<T> operator*(const Vector3<T> &v, const T &c)
+template<class T, unsigned int N> inline Vector<T, N> operator*(const Vector<T, N> &v, const T &c)
 {
-  Vector3<T> tmp(0);
+  Vector<T, N> tmp(0);
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     tmp[i] = v[i] * c;
   }
@@ -622,11 +306,11 @@ template<class T> inline Vector3<T> operator*(const Vector3<T> &v, const T &c)
  * \param[in] c X value.
  *
  */
-template<class T, class X> inline Vector3<T> operator*(const Vector3<T> &v, const X &c)
+template<class T, unsigned int N, class X> inline Vector<T, N> operator*(const Vector<T, N> &v, const X &c)
 {
-  Vector3<T> tmp(0);
+  Vector<T, N> tmp(0);
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     tmp[i] = v[i] * static_cast<T>(c);
   }
@@ -639,16 +323,16 @@ template<class T, class X> inline Vector3<T> operator*(const Vector3<T> &v, cons
  * \param[in] c T value.
  *
  */
-template<class T, class X> inline Vector3<T> operator/(const Vector3<T> &v, const X &c)
+template<class T, unsigned int N, class X> inline Vector<T, N> operator/(const Vector<T, N> &v, const X &c)
 {
   if (c == T(0))
   {
-    throw algebra_error("Vector3::operator/: division by zero");
+    throw algebra_error("Vector::operator/: division by zero");
   }
 
-  Vector3<T> tmp(0);
+  Vector<T, N> tmp(0);
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     tmp[i] = v[i] / static_cast<T>(c);
   }
@@ -661,16 +345,16 @@ template<class T, class X> inline Vector3<T> operator/(const Vector3<T> &v, cons
  * \param[in] b vector.
  *
  */
-template<class T> inline Vector3<T> operator+(const Vector3<T> &a, const Vector3<T> &b)
+template<class T, unsigned int N> inline Vector<T, N> operator+(const Vector<T, N> &a, const Vector<T, N> &b)
 {
-  Vector3<T> ret(0);
+  Vector<T, N> result(0);
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
-    ret[i] = a[i] + b[i];
+    result[i] = a[i] + b[i];
   }
 
-  return ret;
+  return result;
 }
 
 /** \brief operator- (binary)
@@ -678,16 +362,16 @@ template<class T> inline Vector3<T> operator+(const Vector3<T> &a, const Vector3
  * \param[in] b vector.
  *
  */
-template<class T> inline Vector3<T> operator-(const Vector3<T> &a, const Vector3<T> &b)
+template<class T, unsigned int N> inline Vector<T, N> operator-(const Vector<T, N> &a, const Vector<T, N> &b)
 {
-  Vector3<T> ret(0);
+  Vector<T, N> result(0);
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
-    ret[i] = a[i] - b[i];
+    result[i] = a[i] - b[i];
   }
 
-  return ret;
+  return result;
 }
 
 /** \brief operator* (binary, dot product)
@@ -695,11 +379,11 @@ template<class T> inline Vector3<T> operator-(const Vector3<T> &a, const Vector3
  * \param[in] b vector.
  *
  */
-template<class T> inline T operator*(const Vector3<T> &a, const Vector3<T> &b)
+template<class T, unsigned int N> inline T operator*(const Vector<T, N> &a, const Vector<T, N> &b)
 {
   T sum = 0;
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     sum += a[i] * b[i];
   }
@@ -712,9 +396,9 @@ template<class T> inline T operator*(const Vector3<T> &a, const Vector3<T> &b)
  * \param[in] b vector.
  *
  */
-template<class T> inline Vector3<T> operator+=(Vector3<T> &a, const Vector3<T> &b)
+template<class T, unsigned int N> inline Vector<T, N> operator+=(Vector<T, N> &a, const Vector<T, N> &b)
 {
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     a[i] = a[i] + b[i];
   }
@@ -727,9 +411,9 @@ template<class T> inline Vector3<T> operator+=(Vector3<T> &a, const Vector3<T> &
  * \param[in] b vector.
  *
  */
-template<class T> inline Vector3<T> operator-=(Vector3<T> &a, const Vector3<T> &b)
+template<class T, unsigned int N> inline Vector<T, N> operator-=(Vector<T, N> &a, const Vector<T, N> &b)
 {
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     a[i] = a[i] - b[i];
   }
@@ -742,9 +426,9 @@ template<class T> inline Vector3<T> operator-=(Vector3<T> &a, const Vector3<T> &
  * \param[in] c X value.
  *
  */
-template<class T> inline Vector3<T> operator*=(const Vector3<T> &v, const T &c)
+template<class T, unsigned int N> inline Vector<T, N> operator*=(const Vector<T, N> &v, const T &c)
 {
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     v[i] = v[i] * c;
   }
@@ -755,85 +439,63 @@ template<class T> inline Vector3<T> operator*=(const Vector3<T> &v, const T &c)
  * \param[in] c X value.
  *
  */
-template<class T, class X> inline Vector3<T> operator*=(const Vector3<T> &v, const X &c)
+template<class T, unsigned int N, class X> inline Vector<T, N> operator*=(const Vector<T, N> &v, const X &c)
 {
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     v[i] = v[i] * static_cast<T>(c);
   }
 }
 
-/** \brief operator cross product
- * \param[in] v vector.
- * \param[in] w vector.
- *
- */
-template<class T> inline Vector3<T> operator^(const Vector3<T> &v, const Vector3<T> &w)
-{
-  Vector3<T> result;
-  result[0] = v[1] * w[2] - v[2] * w[1];
-  result[1] = v[2] * w[0] - v[0] * w[2];
-  result[2] = v[0] * w[1] - v[1] * w[0];
-
-  return result;
-}
-
 //--------------------------------------------------------------------
 // Matrix class
 //
-template<class T> class Matrix3
+template<class T, unsigned int N> class Matrix
 {
   public:
     /** \brief Matrix3 default constructor.
      *
      */
-    Matrix3()
+    Matrix()
+    : Matrix{0}
     {
-      Vector3<T> a;
-      Vector3<T> b;
-      Vector3<T> c;
-      data.push_back(a);
-      data.push_back(b);
-      data.push_back(c);
     }
 
     /** \brief Matrix3 constructor with a matrix.
      * \param[in] a matrix.
      *
      */
-    Matrix3(Matrix3<T> &a)
+    Matrix(Matrix<T, N> &a)
     {
-      Vector3<T> x = a[0];
-      Vector3<T> y = a[1];
-      Vector3<T> z = a[2];
-      data.push_back(x);
-      data.push_back(y);
-      data.push_back(z);
+      data.reserve(N);
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        data.push_back(a.row(i));
+      }
     }
 
     /** \brief Matrix3 constructor with a scalar.
      * \param[in] value scalar value.
      *
      */
-    Matrix3(const T& scalar)
+    Matrix(const T& scalar)
     {
-      Vector3<T> x(scalar);
-      Vector3<T> y(scalar);
-      Vector3<T> z(scalar);
-      data.push_back(x);
-      data.push_back(y);
-      data.push_back(z);
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        data.push_back(Vector<T,N>(scalar));
+      }
     }
 
     /** \brief Operator =(scalar)
      * \param[in] scalar scalar value.
      *
      */
-    const Matrix3<T>& operator=(T& scalar)
+    const Matrix<T,N>& operator=(T& scalar)
     {
-      data[0] = scalar;
-      data[1] = scalar;
-      data[2] = scalar;
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        data[i] = Vector<T, N>(scalar);
+      }
 
       return *this;
     }
@@ -842,11 +504,11 @@ template<class T> class Matrix3
      * \param[in] a matrix.
      *
      */
-    Matrix3<T>& operator=(const Matrix3<T> &a)
+    Matrix<T, N>& operator=(const Matrix<T,N> &a)
     {
-      for (auto i: {0,1,2})
+      for(unsigned int i; i < N; ++i)
       {
-        for (auto j: {0,1,2})
+        for(unsigned int j; j < N; ++j)
         {
           data[i][j] = a[i][j];
         }
@@ -860,11 +522,11 @@ template<class T> class Matrix3
      * \param[in] b matrix.
      *
      */
-    friend bool operator==(const Matrix3<T>& a, const Matrix3<T>& b)
+    friend bool operator==(const Matrix<T, N>& a, const Matrix<T, N>& b)
     {
-      for (auto i: {0,1,2})
+      for(unsigned int i; i < N; ++i)
       {
-        for (auto j: {0,1,2})
+        for(unsigned int j; j < N; ++j)
         {
           if (a[i][j] != b[i][j])
           {
@@ -881,7 +543,7 @@ template<class T> class Matrix3
      * \param[in] b matrix.
      *
      */
-    friend bool operator!=(const Matrix3<T>& a, const Matrix3<T>& b)
+    friend bool operator!=(const Matrix<T, N>& a, const Matrix<T, N>& b)
     {
       return !(a == b);
     }
@@ -891,9 +553,9 @@ template<class T> class Matrix3
      */
     const bool isNull() const
     {
-      for (auto i: {0,1,2})
+      for(unsigned int i; i < N; ++i)
       {
-        for (auto j: {0,1,2})
+        for(unsigned int j; j < N; ++j)
         {
           if (data[i][j] != 0)
           {
@@ -909,10 +571,10 @@ template<class T> class Matrix3
      * \param[in] i vector index.
      *
      */
-    inline T& operator()(const int i, const int j)
+    inline T& operator()(const unsigned int i, const unsigned int j)
     {
-      assert((0 <= i) && (i < 3));
-      assert((0 <= j) && (j < 3));
+      assert((0 <= i) && (i < N));
+      assert((0 <= j) && (j < N));
 
       return data[i][j];
     }
@@ -921,10 +583,10 @@ template<class T> class Matrix3
      * \param[in] i vector index.
      *
      */
-    inline const T& operator()(const int i, const int j) const
+    inline const T& operator()(const unsigned int i, const unsigned int j) const
     {
-      assert((0 <= i) && (i < 3));
-      assert((0 <= j) && (j < 3));
+      assert((0 <= i) && (i < N));
+      assert((0 <= j) && (j < N));
 
       return data[i][j];
     }
@@ -933,9 +595,9 @@ template<class T> class Matrix3
      * \param[in] i vector index.
      *
      */
-    inline Vector3<T>& operator[](const int i)
+    inline Vector<T, N>& operator[](const unsigned int i)
     {
-      assert((0 <= i) && (i < 3));
+      assert((0 <= i) && (i < N));
 
       return data[i];
     }
@@ -944,9 +606,9 @@ template<class T> class Matrix3
      * \param[in] i vector index.
      *
      */
-    inline const Vector3<T>& operator[](const int i) const
+    inline const Vector<T, N>& operator[](const unsigned int i) const
     {
-      assert((0 <= i) && (i < 3));
+      assert((0 <= i) && (i < N));
 
       return data[i];
     }
@@ -954,9 +616,9 @@ template<class T> class Matrix3
     /** \brief Unary operator +
      *
      */
-    inline const Matrix3<T> operator+()
+    inline const Matrix<T, N> operator+()
     {
-      Matrix3<T> result = *this;
+      Matrix<T, N> result = *this;
 
       return result;
     }
@@ -964,12 +626,13 @@ template<class T> class Matrix3
     /** \brief Unary operator -
      *
      */
-    inline const Matrix3<T> operator-()
+    inline const Matrix<T, N> operator-()
     {
-      Matrix3<T> result;
-      result.data[0] = -data[0];
-      result.data[1] = -data[1];
-      result.data[2] = -data[2];
+      Matrix<T, N> result;
+      for(unsigned int i = 0; i < N; ++i)
+      {
+        result[i] = -data[i];
+      }
 
       return result;
     }
@@ -977,13 +640,13 @@ template<class T> class Matrix3
     /** \brief Transpose operator.
      *
      */
-    Matrix3<T>& transpose()
+    Matrix<T, N>& transpose()
     {
-      Matrix3<T> copy(*this);
+      Matrix<T, N> copy(*this);
 
-      for (auto i: {0,1,2})
+      for(unsigned int i = 0; i < N; ++i)
       {
-        for (auto j: {0,1,2})
+        for(unsigned int j = 0; j < N; ++j)
         {
           data[j][i] = copy[i][j];
         }
@@ -992,51 +655,59 @@ template<class T> class Matrix3
       return *this;
     }
 
+    /** \brief Returns the sub-matrix of the position (i,j)
+     * \param[in] i row.
+     * \param[in] j column.
+     *
+     */
+    Matrix<T, N-1> sub(unsigned int i, unsigned int j)
+    {
+      Matrix<T, N-1> result;
+
+      unsigned int row = 0;
+      for(unsigned int k = 0; k < N; ++k)
+      {
+        Vector<T, N-1> v;
+        if(k == i) continue;
+        unsigned int column = 0;
+        for(unsigned int l = 0; l < N; ++l)
+        {
+          if(l == j) continue;
+          v[column++] = data[k][l];
+        }
+
+        result[row++] = v;
+      }
+
+      return result;
+    }
+
     /** \brief Determinant operator.
      *
      */
     float determinant()
     {
-      return ((data[0][0] * ((data[1][1] * data[2][2]) - (data[1][2] * data[2][1]))) -
-              (data[0][1] * ((data[1][0] * data[2][2]) - (data[1][2] * data[2][0]))) +
-              (data[0][2] * ((data[1][0] * data[2][1]) - (data[1][1] * data[2][0]))));
-    }
+      if(N == 2) return (data[0][0]*data[1][1]) - (data[0][1]*data[1][0]);
 
-    /** \brief Inverse operator.
-     *
-     */
-    Matrix3<T>& inverse()
-    {
-      auto det = determinant();
-      if (det == 0)
+      float result{0};
+      auto sign = [](unsigned int i) { return (i % 2) ? -1 : 1; };
+
+      for(unsigned int i = 0; i < N; ++i)
       {
-        throw algebra_error("Matrix3::Inverse: determinant is zero");
+        result += sign(i) * data[0,i] * sub(0,i).determinant();
       }
 
-      det = 1 / det;
-      Matrix3<T> Inv(*this);
-
-      data[0][0] = ((Inv[1][1] * Inv[2][2]) - (Inv[1][2] * Inv[2][1])) * det;
-      data[0][1] = ((Inv[0][2] * Inv[2][1]) - (Inv[0][1] * Inv[2][2])) * det;
-      data[0][2] = ((Inv[0][1] * Inv[1][2]) - (Inv[0][2] * Inv[1][1])) * det;
-      data[1][0] = ((Inv[1][2] * Inv[2][0]) - (Inv[1][0] * Inv[2][2])) * det;
-      data[1][1] = ((Inv[0][0] * Inv[2][2]) - (Inv[0][2] * Inv[2][0])) * det;
-      data[1][2] = ((Inv[0][2] * Inv[1][0]) - (Inv[0][0] * Inv[1][2])) * det;
-      data[2][0] = ((Inv[1][0] * Inv[2][1]) - (Inv[1][1] * Inv[2][0])) * det;
-      data[2][1] = ((Inv[0][1] * Inv[2][0]) - (Inv[0][0] * Inv[2][1])) * det;
-      data[2][2] = ((Inv[0][0] * Inv[1][1]) - (Inv[0][1] * Inv[1][0])) * det;
-
-      return *this;
+      return result;
     }
 
     /** \brief Identity operator.
      *
      */
-    Matrix3<T>& Identity()
+    Matrix<T, N>& identity()
     {
-      for (auto i: {0,1,2})
+      for(unsigned int i = 0; i < N; ++i)
       {
-        for (auto j: {0,1,2})
+        for(unsigned int j = 0; j < N; ++j)
         {
           data[i][j] = ((i == j) ? T(1) : T(0));
         }
@@ -1049,9 +720,9 @@ template<class T> class Matrix3
      * \param[in] i row index.
      *
      */
-    Vector3<T> row(int i) const
+    Vector<T, N> row(const unsigned int i) const
     {
-      assert((0 <= i) && (i < 3));
+      assert((0 <= i) && (i < N));
 
       return data[i];
     }
@@ -1060,19 +731,20 @@ template<class T> class Matrix3
      * \param[in] i column index.
      *
      */
-    Vector3<T> column(const int i) const
+    Vector<T, N> column(const unsigned int i) const
     {
-      assert((0 <= i) && (i < 3));
+      assert((0 <= i) && (i < N));
 
-      Vector3<T> result;
-      result[0] = data[0][i];
-      result[1] = data[1][i];
-      result[2] = data[2][i];
+      Vector<T, N> result;
+      for(unsigned int j = 0; j < N; ++j)
+      {
+        result[j] = data[j][i];
+      }
 
       return result;
     }
   private:
-    std::vector<Vector3<T> > data;
+    std::vector<Vector<T, N>> data;
 };
 
 /** \brief operator <<
@@ -1080,17 +752,11 @@ template<class T> class Matrix3
  * \param[in] m matrix.
  *
  */
-template<class T> std::ostream& operator<<(std::ostream &stream, const Matrix3<T> &m)
+template<class T, unsigned int N> std::ostream& operator<<(std::ostream &stream, const Matrix<T, N> &m)
 {
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
-    stream << "[";
-    for (auto j: {0,1,2})
-    {
-      stream << m[i][j] << ((j == 2) ? "]" : ",");
-    }
-
-    stream << std::endl;
+    stream << m[i] << std::endl;
   }
   return stream;
 }
@@ -1100,13 +766,13 @@ template<class T> std::ostream& operator<<(std::ostream &stream, const Matrix3<T
  * \param[in] b matrix.
  *
  */
-template<class T> inline Matrix3<T> operator+(const Matrix3<T> &a, const Matrix3<T> &b)
+template<class T, unsigned int N> inline Matrix<T, N> operator+(const Matrix<T, N> &a, const Matrix<T, N> &b)
 {
-  Matrix3<T> tmp(0);
+  Matrix<T, N> tmp(0);
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
-    for (auto j: {0,1,2})
+    for(unsigned int j = 0; j < N; ++j)
     {
       tmp(i, j) = a(i, j) + b(i, j);
     }
@@ -1120,13 +786,13 @@ template<class T> inline Matrix3<T> operator+(const Matrix3<T> &a, const Matrix3
  * \param[in] value T value.
  *
  */
-template<class T> inline Matrix3<T> operator+(const Matrix3<T> &m, const T &value)
+template<class T, unsigned int N> inline Matrix<T, N> operator+(const Matrix<T, N> &m, const T &value)
 {
-  Matrix3<T> tmp(0);
+  Matrix<T, N> tmp(0);
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
-    for (auto j: {0,1,2})
+    for(unsigned int j = 0; j < N; ++j)
     {
       tmp(i, j) = m(i, j) + value;
     }
@@ -1140,13 +806,13 @@ template<class T> inline Matrix3<T> operator+(const Matrix3<T> &m, const T &valu
  * \param[in] b matrix.
  *
  */
-template<class T> inline Matrix3<T> operator-(const Matrix3<T> &a, const Matrix3<T> &b)
+template<class T, unsigned int N> inline Matrix<T, N> operator-(const Matrix<T, N> &a, const Matrix<T, N> &b)
 {
-  Matrix3<T> tmp;
+  Matrix<T, N> tmp(0);
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
-    for (auto j: {0,1,2})
+    for(unsigned int j = 0; j < N; ++j)
     {
       tmp(i, j) = a(i, j) - b(i, j);
     }
@@ -1159,13 +825,13 @@ template<class T> inline Matrix3<T> operator-(const Matrix3<T> &a, const Matrix3
  * \param[in] m matrix.
  * \param[in] value T value.
  */
-template<class T> inline Matrix3<T> operator-(const Matrix3<T> &m, const T &value)
+template<class T, unsigned int N> inline Matrix<T, N> operator-(const Matrix<T, N> &m, const T &value)
 {
-  Matrix3<T> tmp;
+  Matrix<T, N> tmp;
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
-    for (auto j: {0,1,2})
+    for(unsigned int j = 0; j < N; ++j)
     {
       tmp(i, j) = m(i, j) - value;
     }
@@ -1179,13 +845,13 @@ template<class T> inline Matrix3<T> operator-(const Matrix3<T> &m, const T &valu
  * \parma[in] value T value.
  *
  */
-template<class T> inline Matrix3<T> operator/(const Matrix3<T> &m, const T &value)
+template<class T, unsigned int N> inline Matrix<T, N> operator/(const Matrix<T, N> &m, const T &value)
 {
-  Matrix3<T> tmp;
+  Matrix<T, N> tmp;
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
-    for (auto j: {0,1,2})
+    for(unsigned int j = 0; j < N; ++j)
     {
       tmp(i, j) = m(i, j) / value;
     }
@@ -1199,17 +865,17 @@ template<class T> inline Matrix3<T> operator/(const Matrix3<T> &m, const T &valu
  * \param[in] b matrix.
  *
  */
-template<class T> inline Matrix3<T> operator*(const Matrix3<T> &a, const Matrix3<T> &b)
+template<class T, unsigned int N> inline Matrix<T, N> operator*(const Matrix<T, N> &a, const Matrix<T, N> &b)
 {
-  Matrix3<T> tmp;
+  Matrix<T, N> tmp;
   T sum;
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
-    for (auto k: {0,1,2})
+    for(unsigned int k = 0; k < N; ++k)
     {
       sum = 0;
-      for (auto j: {0,1,2})
+      for(unsigned int j = 0; j < N; ++j)
       {
         sum = sum + (a(i, j) * b(j, k));
       }
@@ -1226,11 +892,11 @@ template<class T> inline Matrix3<T> operator*(const Matrix3<T> &a, const Matrix3
  * \param[in] value T value.
  *
  */
-template<class T> inline Matrix3<T> operator*(const Matrix3<T> &m, const T &value)
+template<class T, unsigned int N> inline Matrix<T, N> operator*(const Matrix<T, N> &m, const T &value)
 {
-  Matrix3<T> tmp;
+  Matrix<T, N> tmp;
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     tmp[i] = m[i] * value;
   }
@@ -1243,11 +909,11 @@ template<class T> inline Matrix3<T> operator*(const Matrix3<T> &m, const T &valu
  * \param[in] b matrix.
  *
  */
-template<class T> inline Matrix3<T> operator*(const T scalar, const Matrix3<T> &a)
+template<class T, unsigned int N> inline Matrix<T, N> operator*(const T scalar, const Matrix<T, N> &a)
 {
-  Matrix3<T> tmp;
+  Matrix<T, N> tmp;
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     tmp[i] = a[i] * scalar;
   }
@@ -1260,16 +926,16 @@ template<class T> inline Matrix3<T> operator*(const T scalar, const Matrix3<T> &
  * \param[in] m matrix.
  *
  */
-template<class T> inline Vector3<T> operator*(const Vector3<T> &v, const Matrix3<T> &m)
+template<class T, unsigned int N> inline Vector<T, N> operator*(const Vector<T, N> &v, const Matrix<T, N> &m)
 {
-  Vector3<T> tmp;
+  Vector<T, N> tmp;
   T sum;
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     sum = 0;
 
-    for (auto j: {0,1,2})
+    for(unsigned int j = 0; j < N; ++j)
     {
       sum = sum + (m(j, i) * v[j]);
     }
@@ -1285,18 +951,18 @@ template<class T> inline Vector3<T> operator*(const Vector3<T> &v, const Matrix3
  * \param[in] v vector.
  *
  */
-template<class T> inline Vector3<T> operator*(const Matrix3<T> &m, const Vector3<T> &v)
+template<class T, unsigned int N> inline Vector<T, N> operator*(const Matrix<T, N> &m, const Vector<T, N> &v)
 {
-  Vector3<T> tmp;
+  Vector<T, N> tmp;
   T sum;
 
-  for (auto i: {0,1,2})
+  for(unsigned int i = 0; i < N; ++i)
   {
     sum = 0;
 
-    for (auto j: {0,1,2})
+    for(unsigned int j = 0; j < N; ++j)
     {
-      sum = sum + (m(j, i) * v[j]);
+      sum = sum + (m(i, j) * v[j]);
     }
 
     tmp[i] = sum;
@@ -1305,25 +971,43 @@ template<class T> inline Vector3<T> operator*(const Matrix3<T> &m, const Vector3
   return tmp;
 }
 
-using Vector3ui  = Vector3<unsigned int>;
-using Vector3i   = Vector3<int>;
-using Vector3f   = Vector3<float>;
-using Vector3d   = Vector3<double>;
-using Vector3ul  = Vector3<unsigned long int>;
-using Vector3ull = Vector3<unsigned long long int>;
-using Vector3ll  = Vector3<long long int>;
+//--------------------------------------------------------------------
+// Special cases
+//
+template<class T> inline Vector<T,3> operator^ (const Vector<T,3> &v, const Vector<T,3> &w)
+{
+  Vector<T,3> result;
+  result[0] = v[1] * w[2] - v[2] * w[1];
+  result[1] = v[2] * w[0] - v[0] * w[2];
+  result[2] = v[0] * w[1] - v[1] * w[0];
 
-using Vector2ui  = Vector2<unsigned int>;
-using Vector2i   = Vector2<int>;
-using Vector2f   = Vector2<float>;
-using Vector2d   = Vector2<double>;
-using Vector2ul  = Vector2<unsigned long int>;
-using Vector2ull = Vector2<unsigned long long int>;
-using Vector2ll  = Vector2<long long int>;
+  return result;
+}
 
-using Matrix3ui = Matrix3<unsigned int>;
-using Matrix3i  = Matrix3<int>;
-using Matrix3f  = Matrix3<float>;
-using Matrix3d  = Matrix3<double>;
+using Vector3ui  = Vector<unsigned int,3>;
+using Vector3i   = Vector<int, 3>;
+using Vector3f   = Vector<float, 3>;
+using Vector3d   = Vector<double, 3>;
+using Vector3ul  = Vector<unsigned long int, 3>;
+using Vector3ull = Vector<unsigned long long int, 3>;
+using Vector3ll  = Vector<long long int, 3>;
+
+using Vector2ui  = Vector<unsigned int, 2>;
+using Vector2i   = Vector<int, 2>;
+using Vector2f   = Vector<float, 2>;
+using Vector2d   = Vector<double, 2>;
+using Vector2ul  = Vector<unsigned long int, 2>;
+using Vector2ull = Vector<unsigned long long int, 2>;
+using Vector2ll  = Vector<long long int, 2>;
+
+using Matrix3ui = Matrix<unsigned int, 3>;
+using Matrix3i  = Matrix<int, 3>;
+using Matrix3f  = Matrix<float, 3>;
+using Matrix3d  = Matrix<double, 3>;
+
+using Matrix4ui = Matrix<unsigned int, 4>;
+using Matrix4i  = Matrix<int, 4>;
+using Matrix4f  = Matrix<float, 4>;
+using Matrix4d  = Matrix<double, 4>;
 
 #endif // ALGEBRA_H_
