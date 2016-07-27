@@ -52,7 +52,7 @@ namespace Draw
    * \param[in] texture triangle texture.
    *
    */
-  void triangle(Vector3f *wPts, Vector3f *sPts, std::shared_ptr<Utils::zBuffer> buffer, const float intensity, Image::TGA &image, Vector2f *uv, Image::TGA &texture);
+  void triangle(Vector3f *wPts, Vector3i *sPts, std::shared_ptr<Utils::zBuffer> buffer, const float intensity, Image::TGA &image, Vector2f *uv, Image::TGA &texture);
 
 } // namespace Draw
 

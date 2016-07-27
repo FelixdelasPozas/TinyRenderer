@@ -63,15 +63,15 @@ void Draw::line(int x0, int y0, int x1, int y1, TGA &image, const Color &color)
 }
 
 //--------------------------------------------------------------------
-Vector3f barycentric(Vector3f *pts, const Vector3f &P)
+Vector3f barycentric(Vector3i *pts, const Vector3f &P)
 {
   Vector3f s[2];
 
   for (auto i: {0,1})
   {
-    s[i][0] = static_cast<int>(pts[2][i]) - static_cast<int>(pts[0][i]);
-    s[i][1] = static_cast<int>(pts[1][i]) - static_cast<int>(pts[0][i]);
-    s[i][2] = static_cast<int>(pts[0][i]) - static_cast<int>(P[i]);
+    s[i][0] = pts[2][i] - pts[0][i];
+    s[i][1] = pts[1][i] - pts[0][i];
+    s[i][2] = pts[0][i] - P[i];
   }
 
   auto u = s[0] ^ s[1];
@@ -86,7 +86,7 @@ Vector3f barycentric(Vector3f *pts, const Vector3f &P)
 }
 
 //--------------------------------------------------------------------
-void Draw::triangle(Vector3f *wPts, Vector3f *sPts, std::shared_ptr<zBuffer> buffer, const float intensity, Image::TGA &image, Vector2f *uv, Image::TGA &texture)
+void Draw::triangle(Vector3f *wPts, Vector3i *sPts, std::shared_ptr<zBuffer> buffer, const float intensity, Image::TGA &image, Vector2f *uv, Image::TGA &texture)
 {
   const auto width  = image.getWidth();
   const auto height = image.getHeight();
@@ -99,8 +99,8 @@ void Draw::triangle(Vector3f *wPts, Vector3f *sPts, std::shared_ptr<zBuffer> buf
   {
     for (int j: {0,1})
     {
-      min[j] = std::max(0, std::min(min[j], static_cast<int>(sPts[i][j])));
-      max[j] = std::min(clamp[j], std::max(max[j], static_cast<int>(sPts[i][j])));
+      min[j] = std::max(0, std::min(min[j], sPts[i][j]));
+      max[j] = std::min(clamp[j], std::max(max[j], sPts[i][j]));
     }
   }
 

@@ -73,14 +73,14 @@ int main(int argc, char *argv[])
 
   BlockTimer timer("Draw");
 
-//  #pragma omp parallel for
+  #pragma omp parallel for
   for (unsigned long i = 0; i < mesh->faces_num(); i++)
   {
     auto face = mesh->getFace(i);
     auto uvs  = mesh->getTexel(i);
 
     Vector3f world_coords[3];
-    Vector3f screen_coords[3];
+    Vector3i screen_coords[3];
     Vector2f uv_coords[3];
 
     for (int j: {0,1,2})
@@ -107,6 +107,33 @@ int main(int argc, char *argv[])
   image->write("output.tga");
 
   zBuffer->write("zbuffer.tga");
+
+  /** dump decomposition of the texture in triangles */
+  auto white = Color(255,255,255,255);
+  width = imagetx->getWidth();
+  height = imagetx->getHeight();
+  #pragma omp parallel for
+  for (unsigned long i = 0; i < mesh->faces_num(); i++)
+  {
+    auto uvs  = mesh->getTexel(i);
+    Vector2f uv_coords[3];
+
+    for (int j: {0,1,2})
+    {
+      uv_coords[j]     = mesh->getuv(uvs[j]);
+    }
+
+    for (int j: {0,1,2})
+    {
+      auto uv1 = uv_coords[j];
+      auto uv2 = uv_coords[(j+1)%3];
+
+      line(uv1[0]*width, uv1[1]*height, uv2[0]*width, uv2[1]*height, *imagetx, white);
+    }
+  }
+
+  imagetx->flipVertically();
+  imagetx->write("texture.tga");
 
 	return 0;
 }
