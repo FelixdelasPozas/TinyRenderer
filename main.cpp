@@ -34,20 +34,44 @@ using namespace Image;
 using namespace Draw;
 using namespace Utils;
 
-const int depth = 255;
-
-void viewport(int x, int y, int w, int h, Matrix4f &m)
+//--------------------------------------------------------------------
+Matrix4f createModelView(const Vector3f &eye, const Vector3f &center, const Vector3f &up)
 {
+  auto z = (eye - center).normalize();
+  auto x = (up ^ z).normalize();
+  auto y = (z ^ x).normalize();
+
+  Matrix4f Minv, Tr;
+  Minv.identity();
+  Tr.identity();
+
+  for (int i = 0; i < 3; i++)
+  {
+    Minv[0][i] = x[i];
+    Minv[1][i] = y[i];
+    Minv[2][i] = z[i];
+      Tr[i][3] = -center[i];
+  }
+
+  return Minv * Tr;
+}
+//--------------------------------------------------------------------
+Matrix4f createViewport(int x, int y, int width, int height, int depth = 255)
+{
+  Matrix4f m;
   m.identity();
-  m[0][3] = x + w / 2.f;
-  m[1][3] = y + h / 2.f;
+  m[0][3] = x + width / 2.f;
+  m[1][3] = y + height / 2.f;
   m[2][3] = depth / 2.f;
 
-  m[0][0] = w / 2.f;
-  m[1][1] = h / 2.f;
+  m[0][0] = width / 2.f;
+  m[1][1] = height / 2.f;
   m[2][2] = depth / 2.f;
+
+  return m;
 }
 
+//--------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
   auto mesh  = Mesh::read_Wavefront("obj/african_head/african_head.obj");
@@ -55,16 +79,17 @@ int main(int argc, char *argv[])
 
   short int width = 1000;
   short int height = 1000;
-  Vector3f light_dir{-1,-1,1};
-  light_dir.normalize();
-  Vector3f camera{0,0,3};
+  Vector3f light_dir = Vector3f{1,-1,1}.normalize();
+  Vector3f eye{1,1,3};
+  Vector3f center{0,0,0};
+  Vector3f up{0,1,0};
 
   Matrix4f Projection;
   Projection.identity();
-  Projection[3][2] = -1.f/camera[2];
+  Projection[3][2] = -1.f/(eye-center).norm();
 
-  Matrix4f ViewPort;
-  viewport(width/8, height/8, width*3/4, height*3/4, ViewPort);
+  auto ViewPort = createViewport(width/8, height/8, width*3/4, height*3/4);
+  auto ModelView = createModelView(eye, center, up);
 
   auto image   = std::make_shared<TGA>(width, height, TGA::RGB);
   auto imagetx = TGA::read("obj/african_head/african_head_diffuse.tga");
@@ -88,7 +113,7 @@ int main(int argc, char *argv[])
     for (int j: {0,1,2})
     {
       world_coords[j]  = mesh->getVertex(face[j]);
-      screen_coords[j] = (ViewPort * (Projection * world_coords[j].augment())).project();
+      screen_coords[j] = (ViewPort * (Projection * (ModelView * world_coords[j].augment()))).project();
       uv_coords[j]     = mesh->getuv(uvs[j]);
       intensities[j]   = mesh->getNormal(face[j]) * light_dir;
     }

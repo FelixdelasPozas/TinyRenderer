@@ -205,6 +205,9 @@ template<class T, unsigned int N> class Vector
       return result;
     }
 
+    /** \brief Augments the vector with 1 dimension
+     *
+     */
     inline Vector<T, N+1> augment() const
     {
       Vector<T, N+1> result;
@@ -218,6 +221,9 @@ template<class T, unsigned int N> class Vector
       return result;
     }
 
+    /** \brief Projects the vector over the N-1 dimension
+     *
+     */
     inline Vector<T, N-1> project() const
     {
       Vector<T, N-1> result;
@@ -230,19 +236,30 @@ template<class T, unsigned int N> class Vector
       return result;
     }
 
-    inline Vector<T, N>& normalize()
+    /** \brief Returns the norm of the vector.
+     *
+     */
+    inline double norm()
     {
-      float result = 0;
+      double sum = 0;
       for(unsigned int i = 0; i < N; ++i)
       {
-        result += data[i]*data[i];
+        sum += data[i]*data[i];
       }
 
-      result = std::sqrt(result);
+      return std::sqrt(sum);
+    }
+
+    /** \brief Normalizes the vector.
+     *
+     */
+    inline Vector<T, N>& normalize()
+    {
+      auto _norm = norm();
 
       for(unsigned int i = 0; i < N; ++i)
       {
-        data[i] = data[i] * (1./result);
+        data[i] = data[i] * (1./_norm);
       }
 
       return *this;
@@ -465,9 +482,10 @@ template<class T, unsigned int N> class Matrix
      * \param[in] a matrix.
      *
      */
-    Matrix(Matrix<T, N> &a)
+    Matrix(const Matrix<T, N> &a)
     {
       data.reserve(N);
+
       for(unsigned int i = 0; i < N; ++i)
       {
         data.push_back(a.row(i));
@@ -743,6 +761,7 @@ template<class T, unsigned int N> class Matrix
 
       return result;
     }
+
   private:
     std::vector<Vector<T, N>> data;
 };
