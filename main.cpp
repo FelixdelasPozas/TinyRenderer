@@ -55,7 +55,8 @@ int main(int argc, char *argv[])
 
   short int width = 1000;
   short int height = 1000;
-  Vector3f light_dir{0,0,-1};
+  Vector3f light_dir{-1,-1,1};
+  light_dir.normalize();
   Vector3f camera{0,0,3};
 
   Matrix4f Projection;
@@ -82,25 +83,17 @@ int main(int argc, char *argv[])
     Vector3f world_coords[3];
     Vector3i screen_coords[3];
     Vector2f uv_coords[3];
+    float    intensities[3];
 
     for (int j: {0,1,2})
     {
-      world_coords[j] = mesh->getVertex(face[j]);
+      world_coords[j]  = mesh->getVertex(face[j]);
       screen_coords[j] = (ViewPort * (Projection * world_coords[j].augment())).project();
-      uv_coords[j]    = mesh->getuv(uvs[j]);
+      uv_coords[j]     = mesh->getuv(uvs[j]);
+      intensities[j]   = mesh->getNormal(face[j]) * light_dir;
     }
 
-    auto normal = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
-    normal.normalize();
-
-    float intensity = normal * light_dir;
-
-    if (intensity > 0)
-    {
-      if(intensity > 1) intensity = 1;
-
-      triangle(world_coords, screen_coords, zBuffer, intensity, *image, uv_coords, *imagetx);
-    }
+    triangle(world_coords, screen_coords, intensities, zBuffer, *image, uv_coords, *imagetx);
   }
 
   image->flipVertically(); // i want to have the origin at the left bottom corner of the image
@@ -120,7 +113,7 @@ int main(int argc, char *argv[])
 
     for (int j: {0,1,2})
     {
-      uv_coords[j]     = mesh->getuv(uvs[j]);
+      uv_coords[j] = mesh->getuv(uvs[j]);
     }
 
     for (int j: {0,1,2})

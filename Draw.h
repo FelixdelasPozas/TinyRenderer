@@ -45,14 +45,14 @@ namespace Draw
   /** \brief Draws a given triangle in the given color on the given image.
    * \param[in] wPts pointer to 3d triangle points.
    * \param[in] sPts pointer to 2d triangle points.
+   * \param[in] intensity intensity values of the vertex.
    * \param[inout] buffer z-buffer vector.
-   * \param[in] intensity color intensity.
    * \param[inout] image TGA image raw pointer.
    * \param[in] uv uv coords of vertices.
    * \param[in] texture triangle texture.
    *
    */
-  void triangle(Vector3f *wPts, Vector3i *sPts, std::shared_ptr<Utils::zBuffer> buffer, const float intensity, Image::TGA &image, Vector2f *uv, Image::TGA &texture);
+  void triangle(Vector3f *wPts, Vector3i *sPts, float *intensities, std::shared_ptr<Utils::zBuffer> buffer, Image::TGA &image, Vector2f *uv, Image::TGA &texture);
 
 } // namespace Draw
 

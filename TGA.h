@@ -21,6 +21,7 @@
 #define TGA_H_
 
 // C++
+#include <cassert>
 #include <memory>
 
 namespace Image
@@ -103,13 +104,28 @@ namespace Image
      * \param[in] c color struct.
      *
      */
-    Color & operator =(const Color &c)
+    Color & operator=(const Color &c)
     {
       if (this != &c)
       {
         bytespp = c.bytespp;
         value = c.value;
       }
+      return *this;
+    }
+
+    /** \brief Color multiplication operator
+     * \param[in] c constant in [0,1]
+     *
+     */
+    Color & operator*(const float c)
+    {
+      assert(c >= 0 && c <= 1);
+      r *= c;
+      g *= c;
+      b *= c;
+      a *= c;
+
       return *this;
     }
   };

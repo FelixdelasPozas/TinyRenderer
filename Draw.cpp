@@ -86,7 +86,7 @@ Vector3f barycentric(Vector3i *pts, const Vector3f &P)
 }
 
 //--------------------------------------------------------------------
-void Draw::triangle(Vector3f *wPts, Vector3i *sPts, std::shared_ptr<zBuffer> buffer, const float intensity, Image::TGA &image, Vector2f *uv, Image::TGA &texture)
+void Draw::triangle(Vector3f *wPts, Vector3i *sPts, float *intensities, std::shared_ptr<zBuffer> buffer, Image::TGA &image, Vector2f *uv, Image::TGA &texture)
 {
   const auto width  = image.getWidth();
   const auto height = image.getHeight();
@@ -119,13 +119,24 @@ void Draw::triangle(Vector3f *wPts, Vector3i *sPts, std::shared_ptr<zBuffer> buf
 
       if (buffer->get(P[0], P[1]) < P[2])
       {
+        buffer->set(P[0], P[1], P[2]);
+
         auto fPoint = (uv[0]*bc_screen[0]) + (uv[1]*bc_screen[1]) + (uv[2]*bc_screen[2]);
         auto iPoint = Vector2i{fPoint[0]*texture.getWidth(), fPoint[1]*texture.getHeight()};
         auto tColor = texture.get(iPoint[0], iPoint[1]);
-        auto iColor = Color(tColor.r*intensity, tColor.g*intensity, tColor.b*intensity, tColor.a*intensity);
 
-        buffer->set(P[0], P[1], P[2]);
-        image.set(P[0], P[1], iColor);
+        // to test Gouraud shading uncomment next line
+        //tColor = Color(255,255,255,255);
+
+        auto intensity = (intensities[0]*bc_screen[0] + intensities[1]*bc_screen[1] + intensities[2]*bc_screen[2]);
+
+        if(intensity > 1) intensity = 1;
+        if(intensity > 0)
+        {
+          auto iColor = tColor*intensity;
+
+          image.set(P[0], P[1], iColor);
+        }
       }
     }
   }
