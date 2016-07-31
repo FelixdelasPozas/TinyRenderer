@@ -18,46 +18,73 @@
  */
 
 // Project
-#include <TGA.h>
+#include <Images.h>
 
 // C++
 #include <iostream>
 #include <fstream>
 #include <cassert>
 #include <cstring>
+#include <ios>
 #include <iosfwd>
+#include <algorithm>
 
-using namespace Image;
+using std::__cxx11::collate;
+
+using namespace Images;
 
 //--------------------------------------------------------------------
-TGA::TGA(const short width, const short height, const short bpp)
+Image::Image(const short width, const short height, const Format bpp)
 : m_width {width}
 , m_height{height}
 , m_bpp   {bpp}
-, m_data  {new unsigned char[width*height*bpp]}
+{
+}
+
+//--------------------------------------------------------------------
+Image::~Image()
+{
+}
+
+//--------------------------------------------------------------------
+const short Image::getWidth() const
+{
+  return m_width;
+}
+
+//--------------------------------------------------------------------
+const short Image::getHeight() const
+{
+  return m_height;
+}
+
+//--------------------------------------------------------------------
+const Image::Format Image::getBytespp() const
+{
+  return m_bpp;
+}
+
+//--------------------------------------------------------------------
+TGA::TGA(const short width, const short height, const Format bpp)
+: Image {width, height, bpp}
+, m_data{new unsigned char[width*height*static_cast<int>(bpp)]}
 {
   clear();
 }
 
 //--------------------------------------------------------------------
-Image::TGA::TGA(const TGA& img)
+TGA::TGA(const TGA& img)
+: Image{img.getWidth(), img.getHeight(), img.getBytespp()}
 {
-  m_width  = img.m_width;
-  m_height = img.m_height;
-  m_bpp    = img.m_bpp;
-
-  delete [] m_data;
-  auto size = m_width*m_height*m_bpp;
+  auto size = img.getWidth()*img.getHeight()*static_cast<int>(img.getBytespp());
   m_data = new unsigned char[size];
   memcpy(reinterpret_cast<void *>(m_data), reinterpret_cast<void *>(img.m_data), size);
 }
 
 //--------------------------------------------------------------------
-Image::TGA::TGA(TGA&& img)
-: m_width {std::move(img.m_width)}
-, m_height{std::move(img.m_height)}
-, m_bpp   {std::move(img.m_bpp)}
-, m_data  {std::move(img.m_data)}
+TGA::TGA(TGA&& img)
+: Image{img.getWidth(), img.getHeight(), img.getBytespp()}
+, m_data{std::move(img.m_data)}
 {
   img.m_data = nullptr;
 }
@@ -71,12 +98,12 @@ TGA::~TGA()
 //--------------------------------------------------------------------
 TGA& TGA::operator =(const TGA& img)
 {
-  m_width  = img.m_width;
-  m_height = img.m_height;
-  m_bpp    = img.m_bpp;
+  m_width  = img.getWidth();
+  m_height = img.getHeight();
+  m_bpp    = img.getBytespp();
 
   delete [] m_data;
-  auto size = m_width*m_height*m_bpp;
+  auto size = m_width*m_height*static_cast<int>(m_bpp);
   m_data = new unsigned char[size];
   memcpy(reinterpret_cast<void *>(m_data), reinterpret_cast<void *>(img.m_data), size);
 
@@ -84,7 +111,7 @@ TGA& TGA::operator =(const TGA& img)
 }
 
 //--------------------------------------------------------------------
-std::shared_ptr<TGA> TGA::read(const std::string& filename)
+std::shared_ptr<Image> TGA::read(const std::string& filename)
 {
   std::ifstream in;
   in.open(filename, std::ios::binary);
@@ -112,8 +139,8 @@ std::shared_ptr<TGA> TGA::read(const std::string& filename)
     return nullptr;
   }
 
-  auto image = std::make_shared<TGA>(static_cast<short int>(header.width & 0xFFFF), static_cast<short int>(header.height & 0xFFFF), header.bitsperpixel);
-  unsigned long nbytes = image->m_bpp * image->m_width * image->m_height;
+  auto image = std::make_shared<TGA>(static_cast<short int>(header.width & 0xFFFF), static_cast<short int>(header.height & 0xFFFF), static_cast<Format>(header.bitsperpixel));
+  unsigned long nbytes = static_cast<int>(image->getBytespp()) * image->getWidth() * image->getHeight();
 
   if (3 == header.datatypecode || 2 == header.datatypecode)
   {
@@ -158,6 +185,25 @@ std::shared_ptr<TGA> TGA::read(const std::string& filename)
 
   in.close();
   return image;
+}
+
+//--------------------------------------------------------------------
+bool TGA::write(const std::string &filename)
+{
+  auto lowerName = filename;
+  std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
+  auto extension = std::string(".tga");
+
+  if (lowerName.length() >= extension.length() && (0 == lowerName.compare(lowerName.length() - extension.length(), extension.length(), extension)))
+  {
+    lowerName = filename;
+  }
+  else
+  {
+    lowerName += extension;
+  }
+
+  return write(lowerName, true);
 }
 
 //--------------------------------------------------------------------
@@ -340,24 +386,6 @@ void TGA::set(unsigned short x, unsigned short y, const Color& color)
 
     memcpy(m_data+pos, color.raw, m_bpp);
   }
-}
-
-//--------------------------------------------------------------------
-const short TGA::getWidth() const
-{
-  return m_width;
-}
-
-//--------------------------------------------------------------------
-const short TGA::getHeight() const
-{
-  return m_height;
-}
-
-//--------------------------------------------------------------------
-const short TGA::getBytespp() const
-{
-  return m_bpp;
 }
 
 //--------------------------------------------------------------------

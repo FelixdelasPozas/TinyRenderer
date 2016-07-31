@@ -21,14 +21,14 @@
 #define UTILS_H_
 
 // Project
+#include <Images.h>
 #include "Algebra.h"
-#include "TGA.h"
-
-// C++
 #include <chrono>
 #include <memory>
 #include <string>
 #include <mutex>
+
+class Mesh;
 
 namespace Utils
 {
@@ -64,6 +64,16 @@ namespace Utils
        */
       void set(const unsigned short x, const unsigned short y, double value);
 
+      /** \brief Checks the value and sets in the same operation. Returns true on success and false otherwise.
+       * \param[in] x point x coordinate.
+       * \param[in] y point y coordinate.
+       * \param[in] value depth value.
+       *
+       * NOTE: this avoids race conditions between the get and set in GL triangle method that results in some invalid
+       *       pixels in the buffer due to OpenMP. In single thread execution get/set is enough.
+       */
+      bool checkAndSet(const unsigned short x, const unsigned short y, float value);
+
       /** \brief Returns the width of the buffer.
        *
        */
@@ -98,6 +108,13 @@ namespace Utils
 
       mutable std::mutex m_mutex;  /** protects data */
   };
+
+  /** \brief Draws the driangles onto the texture and saves it to disk.
+   * \param[in] mesh mesh object.
+   * \param[in] filename filename on disk.
+   *
+   */
+  bool dumpTexture(std::shared_ptr<Mesh> mesh, const std::string &filename);
 
   /** \class Timer
    * \brief Utility class to time an execution block.

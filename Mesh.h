@@ -22,6 +22,7 @@
 
 // Project
 #include "Algebra.h"
+#include "Images.h"
 
 // C++
 #include <vector>
@@ -73,31 +74,53 @@ class Mesh
     { return m_vertices[idx]; }
 
     /** \brief Returns the vertices list of the given face index in the faces list.
-     * \param[in] idx index.
+     * \param[in] idx face index.
      *
      */
-    std::vector<unsigned long> getFace(unsigned long idx)
+    std::vector<unsigned long> getFaceVertices(unsigned long idx)
     { return m_faces[idx]._vertex; }
 
-    /** \brief Returns the texels list of the given face index in the faces list.
-     * \param[in] idx index.
+    /** \brief Returns the uv indexes list of the given face index in the faces list.
+     * \param[in] idx face index.
      *
      */
-    std::vector<unsigned long> getTexel(unsigned long idx)
+    std::vector<unsigned long> getuvIds(unsigned long idx)
     { return m_faces[idx]._uv; }
 
     /** \brief Returns the texture coordinates for the given index.
+     * \param[in] idx vertex index.
      *
      */
     Vector2f getuv(unsigned long idx)
     { return m_uv[idx]; }
 
     /** \brief Returns the normal vector of the given vertex index.
-     * \param[in] idx index.
+     * \param[in] idx vertex index.
      *
      */
     Vector3f getNormal(unsigned long idx)
     { return m_normals[idx]; }
+
+    /** \brief Sets the diffuse texture of the model.
+     * \param[in] texture texture image object.
+     *
+     */
+    void setDiffuseTexture(std::shared_ptr<Images::Image> texture);
+
+    /** \brief Returns the diffuse texture.
+     *
+     * NOTE: should be const returned but need not to to dump it.
+     *
+     */
+    std::shared_ptr<Images::Image> diffuseTexture() const
+    { return m_diffuse; }
+
+    /** \brief Returns the diffuse texture color for the given coordinates.
+     * \param[in] u u coordinate.
+     * \param[in] v v coordinate.
+     *
+     */
+    Images::Color getDiffuse(const float u, const float v);
 
   private:
     using vertex = Vector3f;
@@ -166,6 +189,7 @@ class Mesh
     std::vector<face>   m_faces;     /** mesh faces vector.               */
     std::vector<uv>     m_uv;        /** texture coordinates of vertices. */
     std::vector<normal> m_normals;   /** face normals.                    */
+    std::shared_ptr<Images::Image> m_diffuse; /** mesh diffuse texture. */
 };
 
 #endif // MESH_H_

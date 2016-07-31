@@ -18,10 +18,11 @@
  */
 
 // Project
-#include "Mesh.h"
-#include "Draw.h"
-#include "Utils.h"
-#include "Algebra.h"
+#include <Mesh.h>
+#include <GL_Impl.h>
+#include <Utils.h>
+#include <Algebra.h>
+#include <Shaders.h>
 
 // C++
 #include <array>
@@ -30,136 +31,103 @@
 #include <memory>
 #include <string>
 
-using namespace Image;
-using namespace Draw;
+using namespace Images;
+using namespace GL_Impl;
 using namespace Utils;
 
-//--------------------------------------------------------------------
-Matrix4f createProjection(const float proj)
+Matrix4f ModelView;
+Matrix4f ViewPort;
+Matrix4f Projection;
+Vector3f Light;
+
+std::vector<std::shared_ptr<Mesh>> loadMeshes()
 {
-  Matrix4f projection;
-  projection.identity();
-  projection[3][2] = proj;
+  std::vector<std::shared_ptr<Mesh>> meshes;
 
-  return projection;
-}
+  auto diffuseTex = TGA::read("obj/african_head/african_head_diffuse.tga");
+  assert(diffuseTex);
+  diffuseTex->flipVertically();
 
-//--------------------------------------------------------------------
-Matrix4f createModelView(const Vector3f &eye, const Vector3f &center, const Vector3f &up)
-{
-  auto z = (eye - center).normalize();
-  auto x = (up ^ z).normalize();
-  auto y = (z ^ x).normalize();
+  auto mesh = Mesh::read_Wavefront("obj/african_head/african_head.obj");
+  assert(mesh);
+  mesh->setDiffuseTexture(diffuseTex);
 
-  Matrix4f Minv, Tr;
-  Minv.identity();
-  Tr.identity();
+  meshes.push_back(mesh);
 
-  for (int i = 0; i < 3; i++)
-  {
-    Minv[0][i] = x[i];
-    Minv[1][i] = y[i];
-    Minv[2][i] = z[i];
-      Tr[i][3] = -center[i];
-  }
+//  diffuseTex = TGA::read("obj/african_head/african_head_eye_outer_diffuse.tga");
+//  assert(diffuseTex);
+//  diffuseTex->flipVertically();
+//
+//  mesh = Mesh::read_Wavefront("obj/african_head/african_head_eye_outer.obj");
+//  assert(mesh);
+//  mesh->setDiffuseTexture(diffuseTex);
+//
+//  meshes.push_back(mesh);
 
-  return Minv * Tr;
-}
-//--------------------------------------------------------------------
-Matrix4f createViewport(int x, int y, int width, int height, int depth = 255)
-{
-  Matrix4f m;
-  m.identity();
-  m[0][3] = x + width / 2.f;
-  m[1][3] = y + height / 2.f;
-  m[2][3] = depth / 2.f;
+  diffuseTex = TGA::read("obj/african_head/african_head_eye_inner_diffuse.tga");
+  assert(diffuseTex);
+  diffuseTex->flipVertically();
 
-  m[0][0] = width / 2.f;
-  m[1][1] = height / 2.f;
-  m[2][2] = depth / 2.f;
+  mesh = Mesh::read_Wavefront("obj/african_head/african_head_eye_inner.obj");
+  assert(mesh);
+  mesh->setDiffuseTexture(diffuseTex);
 
-  return m;
+  meshes.push_back(mesh);
+
+  return meshes;
 }
 
 //--------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-  auto mesh  = Mesh::read_Wavefront("obj/african_head/african_head.obj");
-  if(!mesh) return 1;
-
   short int width = 1000;
   short int height = 1000;
-  Vector3f light_dir = Vector3f{1,-1,1}.normalize();
   Vector3f eye{1,1,3};
   Vector3f center{0,0,0};
   Vector3f up{0,1,0};
 
-  auto Projection      = createProjection(-1.f/(eye-center).norm());
-  auto ViewPort        = createViewport(width/8, height/8, width*3/4, height*3/4);
-  auto ModelView       = createModelView(eye, center, up);
-  auto normalTransform = (Projection * ModelView).transpose().inverse();
+  Light = Vector3f{1.,-0.5,1.}.normalize();
+  projection(-1.f/(eye-center).norm());
+  viewport(width/8, height/8, width*3/4, height*3/4);
+  lookAt(eye, center, up);
 
-  auto image   = std::make_shared<TGA>(width, height, TGA::RGB);
-  auto imagetx = TGA::read("obj/african_head/african_head_diffuse.tga");
-  imagetx->flipVertically();
-  assert(imagetx);
+  auto image   = std::make_shared<TGA>(width, height, Image::RGB);
   auto zBuffer = std::make_shared<Utils::zBuffer>(width, height);
 
   BlockTimer timer("Draw");
 
-  #pragma omp parallel for
-  for (unsigned long i = 0; i < mesh->faces_num(); i++)
+  // int pass = 0;
+  for(auto current: loadMeshes())
   {
-    auto face = mesh->getFace(i);
-    auto uvs  = mesh->getTexel(i);
-
-    Vector3f world_coords[3];
-    Vector3i screen_coords[3];
-    Vector2f uv_coords[3];
-    float    intensities[3];
-
-    for (int j: {0,1,2})
+    #pragma omp parallel for
+    for (unsigned long i = 0; i < current->faces_num(); i++)
     {
-      world_coords[j]  = mesh->getVertex(face[j]);
-      screen_coords[j] = (ViewPort * Projection * ModelView * world_coords[j].augment()).project();
-      uv_coords[j]     = mesh->getuv(uvs[j]);
-      intensities[j]   = (normalTransform * mesh->getNormal(face[j]).augment()).project() * light_dir;
+      // change between GouraudSimpleShader, CellShader and GouraudShader
+      CellShader shader;
+      shader.baseColor = Color(255,128,0);
+      shader.m_mesh = current;
+      Vector3f screen_coords[3];
+      for (int j = 0; j < 3; j++)
+      {
+        screen_coords[j] = shader.vertex(i, j);
+      }
+
+      triangle(screen_coords, shader, *zBuffer, *image);
     }
 
-    triangle(world_coords, screen_coords, intensities, zBuffer, *image, uv_coords, *imagetx);
+    // write result on every mesh painted
+    // image->write("pass" + std::to_string(++pass));
+    // dump decomposition of the texture of the mesh in triangles
+    // dumpTexture(current, "texture" + std::to_string(pass));
   }
 
   image->flipVertically(); // i want to have the origin at the left bottom corner of the image
-  image->write("output.tga");
+  image->write("output");
 
-  zBuffer->write("zbuffer.tga");
+  zBuffer->write("zbuffer");
 
-  /** dump decomposition of the texture in triangles */
-  auto white = Color(255,255,255,255);
-  width = imagetx->getWidth();
-  height = imagetx->getHeight();
-  #pragma omp parallel for
-  for (unsigned long i = 0; i < mesh->faces_num(); i++)
-  {
-    auto uvs  = mesh->getTexel(i);
-    Vector2f uv_coords[3];
-
-    for (int j: {0,1,2})
-    {
-      uv_coords[j] = mesh->getuv(uvs[j]);
-    }
-
-    for (int j: {0,1,2})
-    {
-      auto uv1 = uv_coords[j];
-      auto uv2 = uv_coords[(j+1)%3];
-
-      line(uv1[0]*width, uv1[1]*height, uv2[0]*width, uv2[1]*height, *imagetx, white);
-    }
-  }
-
-  imagetx->flipVertically();
-  imagetx->write("texture.tga");
+  // dump decomposition of the texture in triangles
+  // dumpTexture(diffuseTex, mesh, "texture");
 
 	return 0;
 }

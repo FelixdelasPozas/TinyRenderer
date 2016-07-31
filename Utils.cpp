@@ -18,13 +18,16 @@
  */
 
 // Project
+#include <Images.h>
 #include <Utils.h>
-#include <TGA.h>
+#include <GL_Impl.h>
+#include <Mesh.h>
 
 // C++
 #include <iostream>
 
-using namespace Image;
+using namespace Images;
+using namespace GL_Impl;
 
 //--------------------------------------------------------------------
 Utils::BlockTimer::BlockTimer(const std::string& id)
@@ -84,6 +87,24 @@ void Utils::zBuffer::set(const unsigned short x, const unsigned short y, double 
 }
 
 //--------------------------------------------------------------------
+bool Utils::zBuffer::checkAndSet(const unsigned short x, const unsigned short y, float value)
+{
+  assert(x < m_width && y < m_height);
+  std::lock_guard<std::mutex> lock(m_mutex);
+
+  if(m_data[y*m_width + x] < value)
+  {
+    if(m_min > value) m_min = value;
+    if(m_max < value) m_max = value;
+
+    m_data[y*m_width + x] = value;
+    return true;
+  }
+
+  return false;
+}
+
+//--------------------------------------------------------------------
 unsigned short Utils::zBuffer::getWidth() const
 {
   return m_width;
@@ -114,7 +135,7 @@ float Utils::zBuffer::getMaximum() const
 //--------------------------------------------------------------------
 void Utils::zBuffer::write(const std::string& filename)
 {
-  auto image = std::make_shared<Image::TGA>(m_width, m_height, Image::TGA::GRAYSCALE);
+  auto image = std::make_shared<Images::TGA>(m_width, m_height, Image::GRAYSCALE);
   auto min   = std::fabs(m_min);
   auto delta = 256./(m_max + min);
 
@@ -124,10 +145,42 @@ void Utils::zBuffer::write(const std::string& filename)
     {
       auto value = get(x,y) + min;
       if(value == -std::numeric_limits<double>::max()) continue;
-      image->set(x, y, Color(value*delta, Image::TGA::GRAYSCALE));
+      image->set(x, y, Color(value*delta, Image::GRAYSCALE));
     }
   }
 
   image->flipVertically();
   image->write(filename);
+}
+
+//--------------------------------------------------------------------
+bool Utils::dumpTexture(std::shared_ptr<Mesh> mesh, const std::string &filename)
+{
+  auto texture = mesh->diffuseTexture();
+  auto width   = texture->getWidth();
+  auto height  = texture->getHeight();
+  auto white   = Color(255,255,255);
+
+  #pragma omp parallel for
+  for (unsigned long i = 0; i < mesh->faces_num(); i++)
+  {
+    auto uvs  = mesh->getuvIds(i);
+    Vector2f uv_coords[3];
+
+    for (int j: {0,1,2})
+    {
+      uv_coords[j] = mesh->getuv(uvs[j]);
+    }
+
+    for (int j: {0,1,2})
+    {
+      auto uv1 = uv_coords[j];
+      auto uv2 = uv_coords[(j+1)%3];
+
+      line(uv1[0]*width, uv1[1]*height, uv2[0]*width, uv2[1]*height, *texture, white);
+    }
+  }
+
+  texture->flipVertically();
+  return texture->write(filename);
 }

@@ -31,9 +31,10 @@ set (SOURCES
   ${SOURCES}
   main.cpp
   Mesh.cpp
-  TGA.cpp
-  Draw.cpp
+  Images.cpp
+  GL_Impl.cpp
   Utils.cpp
+  Shaders.cpp
 )
 
 set(LIBS

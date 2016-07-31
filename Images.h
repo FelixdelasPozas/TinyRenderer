@@ -17,14 +17,14 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TGA_H_
-#define TGA_H_
+#ifndef IMAGES_H_
+#define IMAGES_H_
 
 // C++
 #include <cassert>
 #include <memory>
 
-namespace Image
+namespace Images
 {
   struct Color
   {
@@ -128,79 +128,79 @@ namespace Image
 
       return *this;
     }
+
+    /** \brief Color inversion, alpha untouched.
+     *
+     */
+    Color & inverse()
+    {
+      r = 255-r;
+      g = 255-g;
+      b = 255-b;
+
+      return *this;
+    }
+
+    /** \brief Additive operation
+     *
+     */
+    Color & operator+(const Color &color)
+    {
+      r = std::min(255, r + color.r);
+      g = std::min(255, g + color.g);
+      b = std::min(255, b + color.b);
+      a = std::min(255, a + color.a);
+
+      return *this;
+    }
   };
 
-  /** \class TGA
-   * \brief Implements TGA image format.
+  /** \class Image
+   * \brief Image base class API.
    *
    */
-  class TGA
+  class Image
   {
     public:
-      /** \brief TGA class constructor.
+      /** Bits per pixel options. */
+      enum Format { GRAYSCALE=1, RGB=3, RGBA=4 };
+
+      /** \brief Image class constructor.
        * \param[in] width image width.
        * \param[in] height image height.
        * \param[in] bpp bits per pixel.
        *
        */
-      explicit TGA(const short width, const short height, const short bpp);
+      explicit Image(const short width, const short height, const Format bpp);
 
-      /** \brief TGA class copy constructor.
+      /** \brief Image class virtual destructor.
        *
        */
-      TGA(const TGA &img);
-
-      /** \brief TGA class move constructor.
-       *
-       */
-      TGA(TGA &&img);
-
-      /** \brief TGA class virtual destructor.
-       *
-       */
-      virtual ~TGA();
-
-      TGA & operator =(const TGA &img);
-
-      /** TGA image bits per pixel options. */
-      enum Format { GRAYSCALE=1, RGB=3, RGBA=4 };
-
-      /** \brief Reads a TGA file from disk and returns a TGA image.
-       * \param[in] filename file name.
-       *
-       */
-      static std::shared_ptr<TGA> read(const std::string &filename);
-
-      /** \brief Writes the current image to disk.
-       * \param[in] filename file name.
-       * \param[in] rle true to use run-lenght encoding and false otherwise.
-       *
-       */
-      bool write(const std::string &filename, bool rle=true);
+      virtual ~Image();
 
       /** \brief Flips the image horizontally.
        *
        */
-      void flipHorizontally();
+      virtual void flipHorizontally() = 0;
 
       /** \brief Flips the image vertically.
        *
        */
-      void flipVertically();
+      virtual void flipVertically() = 0;
 
       /** \brief Scales the image.
        * \param[in] width new image width.
        * \param[in] height new image height.
        *
        */
-      void scale(const unsigned short width, const unsigned short height);
+      virtual void scale(const unsigned short width, const unsigned short height) = 0;
 
       /** \brief Returns the color of the given pixel.
        * \param[in] x pixel x coordinate.
        * \param[in] y pixel y coordinate.
        *
        */
-      Color get(unsigned short x, unsigned short y);
+      virtual Color get(unsigned short x, unsigned short y) = 0;
 
       /** \brief Sets the color of the given pixel.
        * \param[in] x pixel x coordinate.
@@ -208,7 +208,7 @@ namespace Image
        * \param[in] color new pixel color.
        *
        */
-      void set(unsigned short x, unsigned short y, const Color &color);
+      virtual void set(unsigned short x, unsigned short y, const Color &color) = 0;
 
       /** \brief Returns the width of the image.
        *
@@ -223,24 +223,83 @@ namespace Image
       /** \brief Returns the bits per pixel of the image.
        *
        */
-      const short getBytespp() const;
+      const Format getBytespp() const;
 
-      /** \brief Returns a pointer to the raw image data.
+      /** \brief Writes the current image to disk.
+       * \param[in] filename file name.
        *
        */
-      unsigned char *buffer() const;
-
-      /** \brief Returns a pointer to the const data.
-       *
-       */
-      const unsigned char *constBuffer() const;
+      virtual bool write(const std::string &filename) = 0;
 
       /** \brief Sets the image to black color.
        *
        */
-      void clear();
+      virtual void clear() = 0;
 
+    protected:
+      short int m_width;  /** image width.     */
+      short int m_height; /** image height.    */
+      Format    m_bpp;    /** bytes per pixel. */
+  };
+
+  /** \class TGA
+   * \brief Implements TGA image format.
+   *
+   */
+  class TGA
+  : public Image
+  {
     public:
+      /** \brief TGA class constructor.
+       * \param[in] width image width.
+       * \param[in] height image height.
+       * \param[in] bpp bits per pixel.
+       *
+       */
+      explicit TGA(const short width, const short height, const Format bpp);
+
+      /** \brief TGA class virtual destructor.
+       *
+       */
+      virtual ~TGA();
+
+      /** \brief TGA class copy constructor.
+       *
+       */
+      TGA(const TGA &img);
+
+      /** \brief TGA class move constructor.
+       *
+       */
+      TGA(TGA &&img);
+
+      /** \brief Operator assignment.
+       * \param[in] image
+       *
+       */
+      TGA & operator =(const TGA &image);
+
+      /** \brief Reads a TGA file from disk and returns a TGA image.
+       * \param[in] filename file name.
+       *
+       */
+      static std::shared_ptr<Image> read(const std::string &filename);
+
+      virtual bool write(const std::string &filename);
+
+      virtual void flipHorizontally();
+
+      virtual void flipVertically();
+
+      virtual void scale(const unsigned short width, const unsigned short height);
+
+      Color get(unsigned short x, unsigned short y);
+
+      void set(unsigned short x, unsigned short y, const Color &color);
+
+      virtual void clear();
+
+    private:
       /** \brief TGA file header.
        *
        * NOTE: some versions of mingw64 will pack this struct wrong, to enable
@@ -264,7 +323,22 @@ namespace Image
         char  imagedescriptor;
       };
 
+      /** \brief Returns a pointer to the raw image data.
+       *
+       */
+      unsigned char *buffer() const;
 
+      /** \brief Returns a pointer to the const data.
+       *
+       */
+      const unsigned char *constBuffer() const;
+
+      /** \brief Writes the current image to disk.
+       * \param[in] filename file name.
+       * \param[in] rle true to use run-lenght encoding and false otherwise.
+       *
+       */
+      bool write(const std::string &filename, bool rle);
 
       /** \brief Decode run-length encoded data from the given stream.
        * \param[in] in data stream.
@@ -278,12 +352,10 @@ namespace Image
        */
       bool unloadRLEdata(std::ofstream &out);
 
-      short int      m_width;  /** image width.     */
-      short int      m_height; /** image height.    */
-      short int      m_bpp;    /** bytes per pixel. */
-      unsigned char *m_data;   /** data buffer.     */
+    private:
+      unsigned char *m_data;   /** data buffer. */
   };
 
-} // namespace Image
+} // namespace Images
 
-#endif // TGA_H_
+#endif // IMAGES_H_

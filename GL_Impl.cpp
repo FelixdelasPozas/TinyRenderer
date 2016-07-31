@@ -18,7 +18,7 @@
  */
 
 // Project
-#include "Draw.h"
+#include <GL_Impl.h>
 #include "Utils.h"
 
 // C++
@@ -26,11 +26,52 @@
 #include <cmath>
 #include <limits>
 
-using namespace Image;
+using namespace Images;
 using namespace Utils;
 
 //--------------------------------------------------------------------
-void Draw::line(int x0, int y0, int x1, int y1, TGA &image, const Color &color)
+void GL_Impl::projection(const float coeff)
+{
+  Projection.identity();
+  Projection[3][2] = coeff;
+}
+
+//--------------------------------------------------------------------
+void GL_Impl::lookAt(const Vector3f &eye, const Vector3f &center, const Vector3f &up)
+{
+  auto z = (eye - center).normalize();
+  auto x = (up ^ z).normalize();
+  auto y = (z ^ x).normalize();
+
+  Matrix4f Minv, Tr;
+  Minv.identity();
+  Tr.identity();
+
+  for (int i = 0; i < 3; i++)
+  {
+    Minv[0][i] = x[i];
+    Minv[1][i] = y[i];
+    Minv[2][i] = z[i];
+      Tr[i][3] = -center[i];
+  }
+
+  ModelView = Minv * Tr;
+}
+//--------------------------------------------------------------------
+void GL_Impl::viewport(int x, int y, int width, int height, int depth)
+{
+  ViewPort.identity();
+  ViewPort[0][3] = x + width / 2.f;
+  ViewPort[1][3] = y + height / 2.f;
+  ViewPort[2][3] = depth / 2.f;
+
+  ViewPort[0][0] = width / 2.f;
+  ViewPort[1][1] = height / 2.f;
+  ViewPort[2][2] = depth / 2.f;
+}
+
+//--------------------------------------------------------------------
+void GL_Impl::line(int x0, int y0, int x1, int y1, Image &image, const Color &color)
 {
   auto steep = false;
   if (std::abs(x0 - x1) < std::abs(y0 - y1))
@@ -63,7 +104,7 @@ void Draw::line(int x0, int y0, int x1, int y1, TGA &image, const Color &color)
 }
 
 //--------------------------------------------------------------------
-Vector3f barycentric(Vector3i *pts, const Vector3f &P)
+Vector3f barycentric(Vector3f *pts, const Vector3f &P)
 {
   Vector3f s[2];
 
@@ -86,7 +127,7 @@ Vector3f barycentric(Vector3i *pts, const Vector3f &P)
 }
 
 //--------------------------------------------------------------------
-void Draw::triangle(Vector3f *wPts, Vector3i *sPts, float *intensities, std::shared_ptr<zBuffer> buffer, Image::TGA &image, Vector2f *uv, Image::TGA &texture)
+void GL_Impl::triangle(Vector3f *sPts, Shader &shader, zBuffer &buffer, Images::Image &image)
 {
   const auto width  = image.getWidth();
   const auto height = image.getHeight();
@@ -99,44 +140,28 @@ void Draw::triangle(Vector3f *wPts, Vector3i *sPts, float *intensities, std::sha
   {
     for (int j: {0,1})
     {
-      min[j] = std::max(0, std::min(min[j], sPts[i][j]));
-      max[j] = std::min(clamp[j], std::max(max[j], sPts[i][j]));
+      min[j] = std::max(0, std::min(min[j], static_cast<int>(sPts[i][j])));
+      max[j] = std::min(clamp[j], std::max(max[j], static_cast<int>(sPts[i][j])));
     }
   }
 
-  Vector3f P;
+  Vector3f P{0,0,0};
 
   for (P[0] = min[0]; P[0] <= max[0]; ++P[0])
   {
     for (P[1] = min[1]; P[1] <= max[1]; ++P[1])
     {
       auto bc_screen = barycentric(sPts, P);
+      P[2] = sPts[0][2]*bc_screen[0] + sPts[1][2]*bc_screen[1] + sPts[2][2]*bc_screen[2];
 
-      if (bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0) continue;
+      if (bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0 || !buffer.checkAndSet(P[0], P[1], P[2])) continue;
 
-      P[2] = 0;
-      for (int i = 0; i < 3; i++) P[2] += wPts[i][2] * bc_screen[i];
+      Color color;
 
-      if (buffer->get(P[0], P[1]) < P[2])
+      bool discard = shader.fragment(bc_screen, color);
+      if (!discard)
       {
-        buffer->set(P[0], P[1], P[2]);
-
-        auto fPoint = (uv[0]*bc_screen[0]) + (uv[1]*bc_screen[1]) + (uv[2]*bc_screen[2]);
-        auto iPoint = Vector2i{fPoint[0]*texture.getWidth(), fPoint[1]*texture.getHeight()};
-        auto tColor = texture.get(iPoint[0], iPoint[1]);
-
-        // to test Gouraud shading uncomment next line
-        //tColor = Color(255,255,255,255);
-
-        auto intensity = (intensities[0]*bc_screen[0] + intensities[1]*bc_screen[1] + intensities[2]*bc_screen[2]);
-
-        if(intensity > 1) intensity = 1;
-        if(intensity > 0)
-        {
-          auto iColor = tColor*intensity;
-
-          image.set(P[0], P[1], iColor);
-        }
+        image.set(P[0], P[1], color);
       }
     }
   }

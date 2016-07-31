@@ -199,3 +199,15 @@ void Mesh::addNormal(const normal &n)
 {
   m_normals.push_back(n);
 }
+
+//--------------------------------------------------------------------
+void Mesh::setDiffuseTexture(std::shared_ptr<Images::Image> texture)
+{
+  m_diffuse = texture;
+}
+
+//--------------------------------------------------------------------
+Images::Color Mesh::getDiffuse(const float u, const float v)
+{
+  return m_diffuse->get(u*m_diffuse->getWidth(), v*m_diffuse->getHeight());
+}

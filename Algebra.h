@@ -125,7 +125,7 @@ template<class T, unsigned int N> class Vector
     {
       for(unsigned int i = 0; i < N; ++i)
       {
-        data[i] = T(v[i]);
+        data[i] = static_cast<T>(v[i]);
       }
 
       return *this;
@@ -525,9 +525,23 @@ template<class T, unsigned int N> class Matrix
     {
       for(unsigned int i; i < N; ++i)
       {
+        data[i] = a[i];
+      }
+
+      return *this;
+    }
+
+    /** \brief Operator =(matrix)
+     * \param[in] a matrix.
+     *
+     */
+    template<class X> Matrix<T, N>& operator=(const Matrix<X,N> &a)
+    {
+      for(unsigned int i; i < N; ++i)
+      {
         for(unsigned int j; j < N; ++j)
         {
-          data[i][j] = a[i][j];
+          data[i][j] = static_cast<T>(a[i][j]);
         }
       }
 
