@@ -149,7 +149,7 @@ bool MultiShader::fragment(Vector3f baricentric, Images::Color& color)
 }
 
 //--------------------------------------------------------------------
-bool PhongShader::fragment(Vector3f baricentric, Images::Color& color)
+bool TexturedSpecularShader::fragment(Vector3f baricentric, Images::Color& color)
 {
   Vector2f uv; // final uv coordinates
   for(unsigned int i = 0; i < 3; ++i) uv += uniform_mesh->getuv(varying_uv_index[i])*baricentric[i];
@@ -168,6 +168,34 @@ bool PhongShader::fragment(Vector3f baricentric, Images::Color& color)
     int value = uniform_ambient_coeff*uniform_ambient_value + static_cast<int>(dColor.raw[i])*(uniform_diffuse_coeff*diffuse + uniform_specular_coeff*specular);
     color.raw[i] = std::min(value, 255);
   }
+
+  return false;
+}
+
+//--------------------------------------------------------------------
+Vector3f PhongShader::vertex(int iface, int nthvert)
+{
+  auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
+
+  varying_uv_index[nthvert] = uniform_mesh->getuvIds(iface)[nthvert];
+  varying_normals[nthvert]  = vertexId;
+
+  auto vertex = uniform_mesh->getVertex(vertexId).augment();
+  return (uniform_transform*vertex).project();
+}
+
+//--------------------------------------------------------------------
+bool PhongShader::fragment(Vector3f baricentric, Images::Color& color)
+{
+  Vector2f uv; // final uv coordinates
+  for(unsigned int i = 0; i < 3; ++i) uv += uniform_mesh->getuv(varying_uv_index[i])*baricentric[i];
+
+  Vector3f normal;
+  for(unsigned int i = 0; i < 3; ++i) normal += uniform_mesh->getNormal(varying_normals[i])*baricentric[i];
+  normal.normalize();
+
+  float diffuse = std::min(1.f, std::max(0.f, normal*Light));
+  color = uniform_mesh->getDiffuse(uv)*diffuse;
 
   return false;
 }

@@ -208,7 +208,7 @@ template<class T, unsigned int N> class Vector
     /** \brief Augments the vector with 1 dimension
      *
      */
-    inline Vector<T, N+1> augment() const
+    inline Vector<T, N+1> augment(const T value = T(1)) const
     {
       Vector<T, N+1> result;
 
@@ -216,7 +216,7 @@ template<class T, unsigned int N> class Vector
       {
         result[i] = data[i];
       }
-      result[N] = T(1);
+      result[N] = value;
 
       return result;
     }

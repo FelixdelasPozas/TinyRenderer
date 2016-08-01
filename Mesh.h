@@ -183,6 +183,34 @@ class Mesh
     float getSpecular(Vector2f uv)
     { return getSpecular(uv[0], uv[1]); }
 
+    /** \brief Sets the Darboux tangent space texture of the model.
+     * \param[in] texture texture image object.
+     *
+     */
+    void setTangent(std::shared_ptr<Images::Image> texture)
+    { m_tangent = texture; }
+
+    /** \brief Returns the Darboux tangent space texture of the model.
+     *
+     */
+    std::shared_ptr<Images::Image> TangentTexture() const
+    { return m_tangent; }
+
+    /** \brief Returns the tangent space vector for the given coordinates.
+     * \param[in] u u coordinate.
+     * \param[in] v v coordinate.
+     *
+     */
+    Vector3f getTangent(const float u, const float v);
+
+    /** \brief Returns the tangent space vector for the given coordinates.
+     * \param[in] uv Vector2f coordinates
+     *
+     */
+    Vector3f getTangent(Vector2f uv)
+    { return getTangent(uv[0], uv[1]); }
+
+
   private:
     using vertex = Vector3f;
     using normal = Vector3f;
@@ -246,14 +274,15 @@ class Mesh
      */
     explicit Mesh();
 
-    std::vector<vertex> m_vertices;  /** mesh vertex vector.              */
-    std::vector<face>   m_faces;     /** mesh faces vector.               */
-    std::vector<uv>     m_uv;        /** texture coordinates of vertices. */
-    std::vector<normal> m_normals;   /** face normals.                    */
+    std::vector<vertex> m_vertices;  /** mesh vertex vector.                 */
+    std::vector<face>   m_faces;     /** mesh faces vector.                  */
+    std::vector<uv>     m_uv;        /** texture coordinates of vertices.    */
+    std::vector<normal> m_normals;   /** face normals.                       */
 
-    std::shared_ptr<Images::Image> m_diffuse;   /** mesh diffuse texture. */
-    std::shared_ptr<Images::Image> m_normalMap; /** normalMap texture.    */
-    std::shared_ptr<Images::Image> m_specular;  /** specular texture.     */
+    std::shared_ptr<Images::Image> m_diffuse;   /** mesh diffuse texture.    */
+    std::shared_ptr<Images::Image> m_normalMap; /** normalMap texture.       */
+    std::shared_ptr<Images::Image> m_specular;  /** specular texture.        */
+    std::shared_ptr<Images::Image> m_tangent;   /** tangent-space normal map.*/
 };
 
 #endif // MESH_H_

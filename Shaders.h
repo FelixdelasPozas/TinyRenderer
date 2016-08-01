@@ -112,7 +112,7 @@ struct TexturedNormalMapping
     virtual bool fragment(Vector3f bar, Images::Color &color);
 };
 
-struct PhongShader
+struct TexturedSpecularShader
 : public TexturedNormalMapping
 {
     virtual bool fragment(Vector3f bar, Images::Color &color);
@@ -121,6 +121,17 @@ struct PhongShader
     int   uniform_ambient_coeff  = 0.2;
     float uniform_specular_coeff = 0.3;
     float uniform_diffuse_coeff  = 0.5;
+};
+
+struct PhongShader
+: public GouraudShader
+{
+    virtual Vector3f vertex(int iface, int nthvert);
+
+    virtual bool fragment(Vector3f bar, Images::Color &color);
+
+    Vector3i varying_uv_index; // uv_indexes
+    Vector3i varying_normals;  // normals.
 };
 
 #endif // SHADERS_H_

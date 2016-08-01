@@ -29,6 +29,10 @@
 
 //--------------------------------------------------------------------
 Mesh::Mesh()
+: m_diffuse  {nullptr}
+, m_normalMap{nullptr}
+, m_specular {nullptr}
+, m_tangent  {nullptr}
 {
 }
 
@@ -227,4 +231,18 @@ float Mesh::getSpecular(const float u, const float v)
   auto color = m_specular->get(u*m_specular->getWidth(), v*m_specular->getHeight());
 
   return color.raw[0]/1.f;
+}
+
+//--------------------------------------------------------------------
+Vector3f Mesh::getTangent(const float u, const float v)
+{
+  auto color = m_tangent->get(u*m_tangent->getWidth(), v*m_tangent->getHeight());
+
+  Vector3f result;
+  for (int i=0; i<3; i++)
+  {
+    result[2-i] = static_cast<float>(color.raw[i])/255.f*2.f - 1.f;
+  }
+
+  return result;
 }
