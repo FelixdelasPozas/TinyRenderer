@@ -48,9 +48,14 @@ std::vector<std::shared_ptr<Mesh>> loadMeshes()
   assert(diffuseTex);
   diffuseTex->flipVertically();
 
+  auto normalMapTex = TGA::read("obj/african_head/african_head_nm.tga");
+  assert(normalMapTex);
+  normalMapTex->flipVertically();
+
   auto mesh = Mesh::read_Wavefront("obj/african_head/african_head.obj");
   assert(mesh);
   mesh->setDiffuseTexture(diffuseTex);
+  mesh->setNormalMap(normalMapTex);
 
   meshes.push_back(mesh);
 
@@ -68,9 +73,14 @@ std::vector<std::shared_ptr<Mesh>> loadMeshes()
   assert(diffuseTex);
   diffuseTex->flipVertically();
 
+  normalMapTex = TGA::read("obj/african_head/african_head_eye_inner_nm.tga");
+  assert(normalMapTex);
+  normalMapTex->flipVertically();
+
   mesh = Mesh::read_Wavefront("obj/african_head/african_head_eye_inner.obj");
   assert(mesh);
   mesh->setDiffuseTexture(diffuseTex);
+  mesh->setNormalMap(normalMapTex);
 
   meshes.push_back(mesh);
 
@@ -86,7 +96,7 @@ int main(int argc, char *argv[])
   Vector3f center{0,0,0};
   Vector3f up{0,1,0};
 
-  Light = Vector3f{1.,-0.5,1.}.normalize();
+  Light = Vector3f{1,1,1}.normalize();
   projection(-1.f/(eye-center).norm());
   viewport(width/8, height/8, width*3/4, height*3/4);
   lookAt(eye, center, up);
@@ -102,10 +112,16 @@ int main(int argc, char *argv[])
     #pragma omp parallel for
     for (unsigned long i = 0; i < current->faces_num(); i++)
     {
-      // change between GouraudSimpleShader, CellShader and GouraudShader
-      CellShader shader;
-      shader.baseColor = Color(255,128,0);
-      shader.m_mesh = current;
+      MultiShader shader;
+      shader.uniform_mesh = current;
+      shader.addShader(new TexturedGouraudShader());
+      shader.addShader(new NormalMapping());
+      shader.addShader(new TexturedNormalMapping());
+      shader.addShader(new CellShader());
+      shader.addShader(new GouraudShader());
+      shader.uniform_interval = 80;
+
+      shader.uniform_mesh = current;
       Vector3f screen_coords[3];
       for (int j = 0; j < 3; j++)
       {
@@ -124,7 +140,8 @@ int main(int argc, char *argv[])
   image->flipVertically(); // i want to have the origin at the left bottom corner of the image
   image->write("output");
 
-  zBuffer->write("zbuffer");
+  // dump zBuffer
+  // zBuffer->write("zbuffer");
 
   // dump decomposition of the texture in triangles
   // dumpTexture(diffuseTex, mesh, "texture");

@@ -1086,6 +1086,14 @@ template<class T> inline Vector<T,3> operator^ (const Vector<T,3> &v, const Vect
   return result;
 }
 
+using Vector4ui  = Vector<unsigned int,4>;
+using Vector4i   = Vector<int, 4>;
+using Vector4f   = Vector<float, 4>;
+using Vector4d   = Vector<double, 4>;
+using Vector4ul  = Vector<unsigned long int, 4>;
+using Vector4ull = Vector<unsigned long long int, 4>;
+using Vector4ll  = Vector<long long int, 4>;
+
 using Vector3ui  = Vector<unsigned int,3>;
 using Vector3i   = Vector<int, 3>;
 using Vector3f   = Vector<float, 3>;

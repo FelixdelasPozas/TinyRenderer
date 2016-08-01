@@ -43,6 +43,8 @@ namespace GL_Impl
       virtual ~Shader() {};
       virtual Vector3f vertex(int iface, int nthvert) = 0;
       virtual bool fragment(Vector3f bar, Images::Color &color) = 0;
+
+      std::shared_ptr<Mesh> uniform_mesh;
   };
 
   /** \brief Creates the viewport matrix.

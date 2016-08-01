@@ -24,6 +24,39 @@
 #include <GL_Impl.h>
 #include <Algebra.h>
 
+/** \struct MultiShader
+ * \brief Use of multiple shaders for image generation.
+ *
+ */
+struct MultiShader
+: public GL_Impl::Shader
+{
+    virtual Vector3f vertex(int iface, int nthvert);
+
+    virtual bool fragment(Vector3f bar, Images::Color &color);
+
+    Vector3f              varying_intensity; // written by vertex shader, read by fragment shader
+    const Matrix4f        uniform_transform = ViewPort*Projection*ModelView;
+
+    std::vector<Shader *> uniform_shaders;
+    int                   uniform_interval = 0;
+    int                   varying_selector = 0;
+    Vector3f              varying_svertex[3];
+    int                   varying_vertexi = 0;
+
+    ~MultiShader()
+    {
+      for(auto shader: uniform_shaders) delete shader;
+    };
+
+    void addShader(Shader *shader)
+    {
+      shader->uniform_mesh = uniform_mesh;
+
+      uniform_shaders.push_back(shader);
+    }
+};
+
 /** \struct GouraudShader
  * \brief Implements Gouraud shading without textures
  *
@@ -36,9 +69,8 @@ struct GouraudShader
     virtual bool fragment(Vector3f bar, Images::Color &color);
 
     Vector3f              varying_intensity; // written by vertex shader, read by fragment shader
-    std::shared_ptr<Mesh> m_mesh;
-
-    Matrix4f transform = ViewPort*Projection*ModelView;
+    const Matrix4f        uniform_transform = ViewPort*Projection*ModelView;
+    const Matrix4f        uniform_transform_TI = (Projection*ModelView).transpose().inverse();
 };
 
 /** \struct GouraudShader
@@ -50,8 +82,8 @@ struct CellShader
 {
     virtual bool fragment(Vector3f bar, Images::Color &color) override;
 
-    int           shades    = 5;                          // default number of shades
-    Images::Color baseColor = Images::Color(255,255,255); // default color
+    int           varying_shades    = 5;                          // default number of varying_shades
+    Images::Color varying_baseColor = Images::Color(255,255,255); // default color
 };
 
 /** \struct GouraudShader
@@ -59,17 +91,25 @@ struct CellShader
  *
  */
 struct TexturedGouraudShader
-: public GL_Impl::Shader
+: public GouraudShader
 {
     virtual Vector3f vertex(int iface, int nthvert);
 
     virtual bool fragment(Vector3f bar, Images::Color &color);
 
-    Vector3f              varying_intensity; // written by vertex shader, read by fragment shader
-    Vector3i              varying_uv_index;
-    std::shared_ptr<Mesh> m_mesh;
+    Vector3i varying_uv_index; // uv_indexes
+};
 
-    Matrix4f transform = ViewPort*Projection*ModelView;
+struct NormalMapping
+: public TexturedGouraudShader
+{
+    virtual bool fragment(Vector3f bar, Images::Color &color);
+};
+
+struct TexturedNormalMapping
+: public TexturedGouraudShader
+{
+    virtual bool fragment(Vector3f bar, Images::Color &color);
 };
 
 #endif // SHADERS_H_

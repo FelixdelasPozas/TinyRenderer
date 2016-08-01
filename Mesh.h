@@ -122,6 +122,40 @@ class Mesh
      */
     Images::Color getDiffuse(const float u, const float v);
 
+    /** \brief Returns the diffuse texture color for the given coordinates.
+     * \param[in] uv Vector2f coordinates
+     *
+     */
+    Images::Color getDiffuse(Vector2f uv)
+    { return getDiffuse(uv[0], uv[1]); }
+
+    /** \brief Sets the normal map texture of the model.
+     * \param[in] texture texture image object.
+     *
+     */
+    void setNormalMap(std::shared_ptr<Images::Image> texture)
+    { m_normalMap = texture; }
+
+    /** \brief Returns the normal map texture.
+     *
+     */
+    std::shared_ptr<Images::Image> normalMapTexture() const
+    { return m_normalMap; }
+
+    /** \brief Returns the normal vector for the given coordinates.
+     * \param[in] u u coordinate.
+     * \param[in] v v coordinate.
+     *
+     */
+    Vector3f getNormalMap(const float u, const float v);
+
+    /** \brief Returns the normal vector for the given coordinates.
+     * \param[in] uv Vector2f coordinates
+     *
+     */
+    Vector3f getNormalMap(Vector2f uv)
+    { return getNormalMap(uv[0], uv[1]); }
+
   private:
     using vertex = Vector3f;
     using normal = Vector3f;
@@ -189,7 +223,9 @@ class Mesh
     std::vector<face>   m_faces;     /** mesh faces vector.               */
     std::vector<uv>     m_uv;        /** texture coordinates of vertices. */
     std::vector<normal> m_normals;   /** face normals.                    */
-    std::shared_ptr<Images::Image> m_diffuse; /** mesh diffuse texture. */
+
+    std::shared_ptr<Images::Image> m_diffuse;   /** mesh diffuse texture. */
+    std::shared_ptr<Images::Image> m_normalMap; /** normalMap texture.    */
 };
 
 #endif // MESH_H_

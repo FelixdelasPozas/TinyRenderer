@@ -211,3 +211,12 @@ Images::Color Mesh::getDiffuse(const float u, const float v)
 {
   return m_diffuse->get(u*m_diffuse->getWidth(), v*m_diffuse->getHeight());
 }
+
+//--------------------------------------------------------------------
+Vector3f Mesh::getNormalMap(const float u, const float v)
+{
+  auto texColor = m_normalMap->get(u*m_normalMap->getWidth(), v*m_normalMap->getHeight());
+  Vector4f vector{texColor.r, texColor.g, texColor.b, texColor.a};
+
+  return vector.project().normalize();
+}
