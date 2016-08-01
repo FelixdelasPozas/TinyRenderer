@@ -86,8 +86,8 @@ bool NormalMapping::fragment(Vector3f baricentric, Images::Color& color)
 
   auto normal = uniform_mesh->getNormalMap(vectoruv);
 
-  auto n = (uniform_transform_TI * normal.augment()).normalize();
-  auto l = (uniform_transform * Light.augment()).normalize();
+  auto n = (uniform_transform_TI * normal.augment()).project().normalize();
+  auto l = (uniform_transform * Light.augment()).project().normalize();
   float intensity = std::min(1.f, std::max(0.f, n * l));
 
   color = Color(255,255,255)*intensity; // well duh
@@ -97,16 +97,16 @@ bool NormalMapping::fragment(Vector3f baricentric, Images::Color& color)
 //--------------------------------------------------------------------
 bool TexturedNormalMapping::fragment(Vector3f baricentric, Images::Color& color)
 {
-  Vector2f vectoruv; // final uv coordinates
-  for(unsigned int i = 0; i < 3; ++i) vectoruv += uniform_mesh->getuv(varying_uv_index[i])*baricentric[i];
+  Vector2f uv; // final uv coordinates
+  for(unsigned int i = 0; i < 3; ++i) uv += uniform_mesh->getuv(varying_uv_index[i])*baricentric[i];
 
-  auto normal = uniform_mesh->getNormalMap(vectoruv);
+  auto normal = uniform_mesh->getNormalMap(uv);
 
-  auto n = (uniform_transform_TI * normal.augment()).normalize();
-  auto l = (uniform_transform * Light.augment()).normalize();
+  auto n = (uniform_transform_TI * normal.augment()).project().normalize();
+  auto l = (uniform_transform * Light.augment()).project().normalize();
   float intensity = std::min(1.f, std::max(0.f, n * l));
 
-  color = uniform_mesh->getDiffuse(vectoruv)*intensity; // well duh
+  color = uniform_mesh->getDiffuse(uv)*intensity; // well duh
   return false;
 }
 
@@ -126,15 +126,15 @@ Vector3f MultiShader::vertex(int iface, int nthvert)
 }
 
 //--------------------------------------------------------------------
-bool MultiShader::fragment(Vector3f bar, Images::Color& color)
+bool MultiShader::fragment(Vector3f baricentric, Images::Color& color)
 {
   assert(varying_vertexi == 3);
 
   Vector2f xy;
   for(int i = 0; i < 3; ++i)
   {
-    xy[0] += varying_svertex[i][0] * bar[i];
-    xy[1] += varying_svertex[i][1] * bar[i];
+    xy[0] += varying_svertex[i][0] * baricentric[i];
+    xy[1] += varying_svertex[i][1] * baricentric[i];
   }
 
   xy = xy / uniform_interval;
@@ -145,5 +145,29 @@ bool MultiShader::fragment(Vector3f bar, Images::Color& color)
   // diagonal stripes
   varying_selector = static_cast<int>(xy[0] + xy[1]) % uniform_shaders.size();
 
-  return uniform_shaders[varying_selector]->fragment(bar, color);
+  return uniform_shaders[varying_selector]->fragment(baricentric, color);
+}
+
+//--------------------------------------------------------------------
+bool PhongShader::fragment(Vector3f baricentric, Images::Color& color)
+{
+  Vector2f uv; // final uv coordinates
+  for(unsigned int i = 0; i < 3; ++i) uv += uniform_mesh->getuv(varying_uv_index[i])*baricentric[i];
+
+  auto normal    = uniform_mesh->getNormalMap(uv);
+  auto n         = (uniform_transform_TI * normal.augment()).project().normalize();
+  auto l         = (uniform_transform * Light.augment()).project().normalize();
+  auto reflected = (n*(2.f*n*l) - l).normalize();
+  float specular = std::pow(std::max(reflected[2], 0.0f), uniform_mesh->getSpecular(uv));
+  float diffuse  = std::min(1.f, std::max(0.f, n*l));
+  auto dColor    = uniform_mesh->getDiffuse(uv);
+  color = dColor;
+
+  for (int i=0; i < color.bytespp; i++)
+  {
+    int value = uniform_ambient_coeff*uniform_ambient_value + static_cast<int>(dColor.raw[i])*(uniform_diffuse_coeff*diffuse + uniform_specular_coeff*specular);
+    color.raw[i] = std::min(value, 255);
+  }
+
+  return false;
 }

@@ -156,6 +156,33 @@ class Mesh
     Vector3f getNormalMap(Vector2f uv)
     { return getNormalMap(uv[0], uv[1]); }
 
+    /** \brief Sets the specular texture of the model.
+     * \param[in] texture texture image object.
+     *
+     */
+    void setSpecular(std::shared_ptr<Images::Image> texture)
+    { m_specular = texture; }
+
+    /** \brief Returns the specular texture.
+     *
+     */
+    std::shared_ptr<Images::Image> SpecularTexture() const
+    { return m_specular; }
+
+    /** \brief Returns the specular value for the given coordinates.
+     * \param[in] u u coordinate.
+     * \param[in] v v coordinate.
+     *
+     */
+    float getSpecular(const float u, const float v);
+
+    /** \brief Returns the specular value for the given coordinates.
+     * \param[in] uv Vector2f coordinates
+     *
+     */
+    float getSpecular(Vector2f uv)
+    { return getSpecular(uv[0], uv[1]); }
+
   private:
     using vertex = Vector3f;
     using normal = Vector3f;
@@ -226,6 +253,7 @@ class Mesh
 
     std::shared_ptr<Images::Image> m_diffuse;   /** mesh diffuse texture. */
     std::shared_ptr<Images::Image> m_normalMap; /** normalMap texture.    */
+    std::shared_ptr<Images::Image> m_specular;  /** specular texture.     */
 };
 
 #endif // MESH_H_

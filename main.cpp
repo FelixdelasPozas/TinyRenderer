@@ -52,10 +52,15 @@ std::vector<std::shared_ptr<Mesh>> loadMeshes()
   assert(normalMapTex);
   normalMapTex->flipVertically();
 
+  auto specular = TGA::read("obj/african_head/african_head_spec.tga");
+  assert(specular);
+  specular->flipVertically();
+
   auto mesh = Mesh::read_Wavefront("obj/african_head/african_head.obj");
   assert(mesh);
   mesh->setDiffuseTexture(diffuseTex);
   mesh->setNormalMap(normalMapTex);
+  mesh->setSpecular(specular);
 
   meshes.push_back(mesh);
 
@@ -77,10 +82,15 @@ std::vector<std::shared_ptr<Mesh>> loadMeshes()
   assert(normalMapTex);
   normalMapTex->flipVertically();
 
+  specular = TGA::read("obj/african_head/african_head_eye_inner_spec.tga");
+  assert(specular);
+  specular->flipVertically();
+
   mesh = Mesh::read_Wavefront("obj/african_head/african_head_eye_inner.obj");
   assert(mesh);
   mesh->setDiffuseTexture(diffuseTex);
   mesh->setNormalMap(normalMapTex);
+  mesh->setSpecular(specular);
 
   meshes.push_back(mesh);
 
@@ -92,7 +102,7 @@ int main(int argc, char *argv[])
 {
   short int width = 1000;
   short int height = 1000;
-  Vector3f eye{1,1,3};
+  Vector3f eye{4,1,10};
   Vector3f center{0,0,0};
   Vector3f up{0,1,0};
 
@@ -112,15 +122,16 @@ int main(int argc, char *argv[])
     #pragma omp parallel for
     for (unsigned long i = 0; i < current->faces_num(); i++)
     {
-      MultiShader shader;
-      shader.uniform_mesh = current;
-      shader.addShader(new TexturedGouraudShader());
-      shader.addShader(new NormalMapping());
-      shader.addShader(new TexturedNormalMapping());
-      shader.addShader(new CellShader());
-      shader.addShader(new GouraudShader());
-      shader.uniform_interval = 80;
+//      MultiShader shader;
+//      shader.uniform_mesh = current;
+//      shader.addShader(new TexturedGouraudShader());
+//      shader.addShader(new NormalMapping());
+//      shader.addShader(new TexturedNormalMapping());
+//      shader.addShader(new CellShader());
+//      shader.addShader(new GouraudShader());
+//      shader.uniform_interval = 80;
 
+      PhongShader shader;
       shader.uniform_mesh = current;
       Vector3f screen_coords[3];
       for (int j = 0; j < 3; j++)

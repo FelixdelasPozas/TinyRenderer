@@ -22,6 +22,8 @@
 
 // C++
 #include <cassert>
+#include <iosfwd>
+#include <iostream>
 #include <memory>
 
 namespace Images
@@ -98,7 +100,7 @@ namespace Images
     Color(const unsigned char *p, int bpp)
     : value  {0}
     , bytespp{bpp}
-    { for (int i=0; i<bpp; i++) raw[i] = p[i]; }
+    { for (int i=0; i<bpp; ++i) raw[i] = p[i]; }
 
     /** \brief Color struct assignment constructor.
      * \param[in] c color struct.
@@ -152,6 +154,19 @@ namespace Images
       a = std::min(255, a + color.a);
 
       return *this;
+    }
+
+    /** \brief operator<<
+     * \param[inout] output std::iostream.
+     * \param[in] color color struct.
+     *
+     */
+    friend std::ostream &operator<<(std::ostream &output, const Color &color)
+    {
+      output << "Color[";
+      for(int i = 0; i < color.bytespp; ++i) output << static_cast<int>(color.raw[i]) << (i == color.bytespp-1 ? "]" : ",");
+
+      return output;
     }
   };
 

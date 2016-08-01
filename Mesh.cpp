@@ -220,3 +220,11 @@ Vector3f Mesh::getNormalMap(const float u, const float v)
 
   return vector.project().normalize();
 }
+
+//--------------------------------------------------------------------
+float Mesh::getSpecular(const float u, const float v)
+{
+  auto color = m_specular->get(u*m_specular->getWidth(), v*m_specular->getHeight());
+
+  return color.raw[0]/1.f;
+}
