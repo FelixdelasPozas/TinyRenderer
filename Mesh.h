@@ -28,6 +28,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <list>
 
 /** \class Mesh
  * \brief Implements a mesh object.
@@ -210,6 +211,33 @@ class Mesh
     Vector3f getTangent(Vector2f uv)
     { return getTangent(uv[0], uv[1]); }
 
+    /** \brief Sets the glow texture of the model.
+     * \param[in] texture texture image object.
+     *
+     */
+    void addAdditive(std::shared_ptr<Images::Image> texture)
+    { m_additives.push_back(texture); }
+
+    /** \brief Returns the glow texture of the model.
+     *
+     */
+    unsigned int additives() const
+    { return m_additives.size(); }
+
+    /** \brief Returns the glow value for the given coordinates.
+     * \param[in] u u coordinate.
+     * \param[in] v v coordinate.
+     *
+     */
+    Images::Color getAdditives(const float u, const float v);
+
+    /** \brief Returns the glow value for the given coordinates.
+     * \param[in] uv Vector2f coordinates
+     *
+     */
+    Images::Color getAdditives(Vector2f uv)
+    { return getAdditives(uv[0], uv[1]); }
+
 
   private:
     using vertex = Vector3f;
@@ -283,6 +311,8 @@ class Mesh
     std::shared_ptr<Images::Image> m_normalMap; /** normalMap texture.       */
     std::shared_ptr<Images::Image> m_specular;  /** specular texture.        */
     std::shared_ptr<Images::Image> m_tangent;   /** tangent-space normal map.*/
+
+    std::list<std::shared_ptr<Images::Image>> m_additives; /** additive to diffuse textures.  */
 };
 
 #endif // MESH_H_

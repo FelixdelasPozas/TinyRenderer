@@ -238,11 +238,11 @@ bool DarbouxNormalShader::fragment(Vector3f baricentric, Images::Color& color)
   B[2] = nb;
   B = B.transpose();
 
-  auto l = Light;
-  auto n = (B * uniform_mesh->getTangent(uv)).normalize();
+  auto l = (uniform_transform_TI * Light.augment()).project();
+  auto n = (uniform_transform_TI * (B * uniform_mesh->getTangent(uv)).normalize().augment()).project();
   auto diff = minmax(n * l);
 
-  color = uniform_mesh->getDiffuse(uv) * diff;
+  color = (uniform_mesh->getDiffuse(uv) * diff) + uniform_mesh->getAdditives(uv);
 
   return false;
 }

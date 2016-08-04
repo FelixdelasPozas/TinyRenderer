@@ -44,53 +44,33 @@ std::vector<std::shared_ptr<Mesh>> loadMeshes()
 {
   std::vector<std::shared_ptr<Mesh>> meshes;
 
-  auto diffuseTex = TGA::read("obj/african_head/african_head_diffuse.tga");
+  auto diffuseTex = TGA::read("obj/diablo3_pose/diablo3_pose_diffuse.tga");
   assert(diffuseTex);
   diffuseTex->flipVertically();
 
-  auto normalMapTex = TGA::read("obj/african_head/african_head_nm.tga");
+  auto normalMapTex = TGA::read("obj/diablo3_pose/diablo3_pose_nm.tga");
   assert(normalMapTex);
   normalMapTex->flipVertically();
 
-  auto specular = TGA::read("obj/african_head/african_head_spec.tga");
+  auto specular = TGA::read("obj/diablo3_pose/diablo3_pose_spec.tga");
   assert(specular);
   specular->flipVertically();
 
-  auto tangent = TGA::read("obj/african_head/african_head_nm_tangent.tga");
+  auto tangent = TGA::read("obj/diablo3_pose/diablo3_pose_nm_tangent.tga");
   assert(tangent);
   tangent->flipVertically();
 
-  auto mesh = Mesh::read_Wavefront("obj/african_head/african_head.obj");
+  auto add = TGA::read("obj/diablo3_pose/diablo3_pose_glow.tga");
+  assert(add);
+  add->flipVertically();
+
+  auto mesh = Mesh::read_Wavefront("obj/diablo3_pose/diablo3_pose.obj");
   assert(mesh);
   mesh->setDiffuseTexture(diffuseTex);
   mesh->setNormalMap(normalMapTex);
   mesh->setSpecular(specular);
   mesh->setTangent(tangent);
-
-  meshes.push_back(mesh);
-
-  diffuseTex = TGA::read("obj/african_head/african_head_eye_inner_diffuse.tga");
-  assert(diffuseTex);
-  diffuseTex->flipVertically();
-
-  normalMapTex = TGA::read("obj/african_head/african_head_eye_inner_nm.tga");
-  assert(normalMapTex);
-  normalMapTex->flipVertically();
-
-  specular = TGA::read("obj/african_head/african_head_eye_inner_spec.tga");
-  assert(specular);
-  specular->flipVertically();
-
-  tangent = TGA::read("obj/african_head/african_head_eye_inner_nm_tangent.tga");
-  assert(tangent);
-  tangent->flipVertically();
-
-  mesh = Mesh::read_Wavefront("obj/african_head/african_head_eye_inner.obj");
-  assert(mesh);
-  mesh->setDiffuseTexture(diffuseTex);
-  mesh->setNormalMap(normalMapTex);
-  mesh->setSpecular(specular);
-  mesh->setTangent(tangent);
+  mesh->addAdditive(add);
 
   meshes.push_back(mesh);
 
@@ -102,11 +82,11 @@ int main(int argc, char *argv[])
 {
   short int width = 1000;
   short int height = 1000;
-  Vector3f eye{4,1,10};
+  Vector3f eye{-4,-1,10};
   Vector3f center{0,0,0};
   Vector3f up{0,1,0};
 
-  Light = Vector3f{15,-4,10}.normalize();
+  Light = Vector3f{0,0,5}.normalize();
   projection(-1.f/(eye-center).norm());
   viewport(width/8, height/8, width*3/4, height*3/4);
   lookAt(eye, center, up);

@@ -27,6 +27,8 @@
 #include <fstream>
 #include <sstream>
 
+using namespace Images;
+
 //--------------------------------------------------------------------
 Mesh::Mesh()
 : m_diffuse  {nullptr}
@@ -245,4 +247,17 @@ Vector3f Mesh::getTangent(const float u, const float v)
   }
 
   return result;
+}
+
+//--------------------------------------------------------------------
+Images::Color Mesh::getAdditives(const float u, const float v)
+{
+  Color color;
+
+  for(auto texture: m_additives)
+  {
+    color = color + texture->get(u*texture->getWidth(), v*texture->getHeight());
+  }
+
+  return color;
 }
