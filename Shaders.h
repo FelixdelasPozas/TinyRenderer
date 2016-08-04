@@ -131,7 +131,21 @@ struct PhongShader
     virtual bool fragment(Vector3f bar, Images::Color &color);
 
     Vector3i varying_uv_index; // uv_indexes
-    Vector3i varying_normals;  // normals.
+    Vector3i varying_normals;  // normals indexes.
+};
+
+struct DarbouxNormalShader
+: public GL_Impl::Shader
+{
+    virtual Vector3f vertex(int iface, int nthvert);
+
+    virtual bool fragment(Vector3f bar, Images::Color &color);
+
+    Vector3i       varying_uv_index; // uv_indexes
+    Matrix3f       varying_normals;  // normals indexes.
+    Matrix3f       varying_vertex;   // triangle in normalized device coordinates
+    const Matrix4f uniform_transform    = ViewPort*Projection*ModelView;
+    const Matrix4f uniform_transform_TI = (Projection*ModelView).transpose().inverse();
 };
 
 #endif // SHADERS_H_

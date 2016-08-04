@@ -224,13 +224,14 @@ template<class T, unsigned int N> class Vector
     /** \brief Projects the vector over the N-1 dimension
      *
      */
-    inline Vector<T, N-1> project() const
+    inline Vector<T, N-1> project(const bool divide = true) const
     {
       Vector<T, N-1> result;
 
       for(unsigned int i = 0; i < N-1; ++i)
       {
-        result[i] = data[i]/data[N-1];
+        result[i] = data[i];
+        if(divide) result[i] /= data[N-1];
       }
 
       return result;
