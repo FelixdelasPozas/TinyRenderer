@@ -206,9 +206,9 @@ Vector3f DarbouxNormalShader::vertex(int iface, int nthvert)
   auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
   varying_uv_index[nthvert] = uniform_mesh->getuvIds(iface)[nthvert];
   varying_normals[nthvert]  = (uniform_transform_TI * uniform_mesh->getNormal(vertexId).augment()).project();
-  varying_vertex[nthvert] = (uniform_transform * uniform_mesh->getVertex(vertexId).augment()).project();
+  varying_vertex[nthvert] = ((Projection*ModelView) * uniform_mesh->getVertex(vertexId).augment()).project();
 
-  return varying_vertex[nthvert];
+  return (ViewPort * varying_vertex[nthvert].augment()).project();
 }
 
 //--------------------------------------------------------------------
@@ -238,8 +238,8 @@ bool DarbouxNormalShader::fragment(Vector3f baricentric, Images::Color& color)
   B[2] = nb;
   B = B.transpose();
 
-  auto l = (uniform_transform_TI * Light.augment()).project();
-  auto n = (uniform_transform_TI * (B * uniform_mesh->getTangent(uv)).normalize().augment()).project();
+  auto l = Light;
+  auto n = (B * uniform_mesh->getTangent(uv)).normalize();
   auto diff = minmax(n * l);
 
   color = (uniform_mesh->getDiffuse(uv) * diff) + uniform_mesh->getAdditives(uv);

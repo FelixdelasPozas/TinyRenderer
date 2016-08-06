@@ -143,8 +143,7 @@ struct DarbouxNormalShader
 
     Vector3i       varying_uv_index; // uv_indexes
     Matrix3f       varying_normals;  // normals indexes.
-    Matrix3f       varying_vertex;   // triangle in normalized device coordinates
-    const Matrix4f uniform_transform    = ViewPort*Projection*ModelView;
+    Matrix3f       varying_vertex;   // triangle in Projection*Modelview
     const Matrix4f uniform_transform_TI = (Projection*ModelView).transpose().inverse();
 };
 

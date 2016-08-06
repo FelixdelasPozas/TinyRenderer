@@ -243,7 +243,7 @@ Vector3f Mesh::getTangent(const float u, const float v)
   Vector3f result;
   for (int i=0; i<3; i++)
   {
-    result[i] = static_cast<float>(color.raw[i])/255.f*2.f - 1.f;
+    result[2-i] = static_cast<float>(color.raw[i])/255.f*2.f - 1.f;
   }
 
   return result;

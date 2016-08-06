@@ -125,7 +125,7 @@ template<class T, unsigned int N> class Vector
     {
       for(unsigned int i = 0; i < N; ++i)
       {
-        data[i] = static_cast<T>(v[i]);
+        data[i] = T(v[i]);
       }
 
       return *this;
@@ -163,22 +163,22 @@ template<class T, unsigned int N> class Vector
      * \param[in] i index value.
      *
      */
-    inline T& operator[](unsigned int index)
+    inline T& operator[](unsigned int i)
     {
-      assert((0 <= index) && (index < N));
+      assert((0 <= i) && (i < N));
 
-      return data[index];
+      return data[i];
     }
 
     /** \brief Const subscript operator
      * \param[in] i index value.
      *
      */
-    inline const T& operator[](unsigned int index) const
+    inline const T& operator[](unsigned int i) const
     {
-      assert((0 <= index) && (index < N));
+      assert((0 <= i) && (i < N));
 
-      return data[index];
+      return data[i];
     }
 
     /** \brief Unary operator +
@@ -309,14 +309,7 @@ template<class T, unsigned int N> inline Vector<T, N> operator*(const T &c, cons
  */
 template<class T, unsigned int N> inline Vector<T, N> operator*(const Vector<T, N> &v, const T &c)
 {
-  Vector<T, N> tmp(0);
-
-  for(unsigned int i = 0; i < N; ++i)
-  {
-    tmp[i] = v[i] * c;
-  }
-
-  return tmp;
+  return c * v;
 }
 
 /** \brief operator* (vector*value)
@@ -326,14 +319,7 @@ template<class T, unsigned int N> inline Vector<T, N> operator*(const Vector<T, 
  */
 template<class T, unsigned int N, class X> inline Vector<T, N> operator*(const Vector<T, N> &v, const X &c)
 {
-  Vector<T, N> tmp(0);
-
-  for(unsigned int i = 0; i < N; ++i)
-  {
-    tmp[i] = v[i] * static_cast<T>(c);
-  }
-
-  return tmp;
+  return T(c) * v;
 }
 
 /** \brief operator/ (vector/value)
@@ -468,7 +454,7 @@ template<class T, unsigned int N, class X> inline Vector<T, N> operator*=(const 
 //--------------------------------------------------------------------
 // Matrix class
 //
-template<class T, unsigned int N> class Matrix
+template<class T, unsigned int R, unsigned int C> class Matrix
 {
   public:
     /** \brief Matrix3 default constructor.
@@ -483,12 +469,12 @@ template<class T, unsigned int N> class Matrix
      * \param[in] a matrix.
      *
      */
-    Matrix(const Matrix<T, N> &a)
+    Matrix(const Matrix<T, R, C> &a)
     {
-      data.reserve(N);
-      for(unsigned int i = 0; i < N; ++i)
+      data.reserve(R);
+      for(unsigned int i = 0; i < R; ++i)
       {
-        data.push_back(a.row(i));
+        data.push_back(a[i]);
       }
     }
 
@@ -498,9 +484,11 @@ template<class T, unsigned int N> class Matrix
      */
     Matrix(const T& scalar)
     {
-      for(unsigned int i = 0; i < N; ++i)
+      auto m_row = Vector<T,C>(scalar);
+
+      for(unsigned int i = 0; i < R; ++i)
       {
-        data.push_back(Vector<T,N>(scalar));
+        data.push_back(m_row);
       }
     }
 
@@ -508,11 +496,12 @@ template<class T, unsigned int N> class Matrix
      * \param[in] scalar scalar value.
      *
      */
-    const Matrix<T,N>& operator=(T& scalar)
+    const Matrix<T, R, C>& operator=(T& scalar)
     {
-      for(unsigned int i = 0; i < N; ++i)
+      auto m_row = Vector<T, C>(scalar);
+      for(unsigned int i = 0; i < R; ++i)
       {
-        data[i] = Vector<T, N>(scalar);
+        data[i] = m_row;
       }
 
       return *this;
@@ -522,9 +511,9 @@ template<class T, unsigned int N> class Matrix
      * \param[in] a matrix.
      *
      */
-    Matrix<T, N>& operator=(const Matrix<T,N> &a)
+    Matrix<T, R, C>& operator=(const Matrix<T, R, C> &a)
     {
-      for(unsigned int i; i < N; ++i)
+      for(unsigned int i = 0; i < R; ++i)
       {
         data[i] = a[i];
       }
@@ -536,11 +525,11 @@ template<class T, unsigned int N> class Matrix
      * \param[in] a matrix.
      *
      */
-    template<class X> Matrix<T, N>& operator=(const Matrix<X,N> &a)
+    template<class X> Matrix<T, R, C>& operator=(const Matrix<X, R, C> &a)
     {
-      for(unsigned int i; i < N; ++i)
+      for(unsigned int i = 0; i < R; ++i)
       {
-        for(unsigned int j; j < N; ++j)
+        for(unsigned int j = 0; j < C; ++j)
         {
           data[i][j] = static_cast<T>(a[i][j]);
         }
@@ -554,11 +543,11 @@ template<class T, unsigned int N> class Matrix
      * \param[in] b matrix.
      *
      */
-    friend bool operator==(const Matrix<T, N>& a, const Matrix<T, N>& b)
+    friend bool operator==(const Matrix<T, R, C>& a, const Matrix<T, R, C>& b)
     {
-      for(unsigned int i; i < N; ++i)
+      for(unsigned int i = 0; i < R; ++i)
       {
-        for(unsigned int j; j < N; ++j)
+        for(unsigned int j = 0; j < C; ++j)
         {
           if (a[i][j] != b[i][j])
           {
@@ -575,7 +564,7 @@ template<class T, unsigned int N> class Matrix
      * \param[in] b matrix.
      *
      */
-    friend bool operator!=(const Matrix<T, N>& a, const Matrix<T, N>& b)
+    friend bool operator!=(const Matrix<T, R, C>& a, const Matrix<T, R, C>& b)
     {
       return !(a == b);
     }
@@ -585,9 +574,9 @@ template<class T, unsigned int N> class Matrix
      */
     const bool isNull() const
     {
-      for(unsigned int i; i < N; ++i)
+      for(unsigned int i = 0; i < R; ++i)
       {
-        for(unsigned int j; j < N; ++j)
+        for(unsigned int j = 0; j < C; ++j)
         {
           if (data[i][j] != 0)
           {
@@ -599,14 +588,45 @@ template<class T, unsigned int N> class Matrix
       return true;
     }
 
+    /** \brief Sets the row of the matrix
+     * \param[in] j number of row
+     * \param[in] v row vector.
+     *
+     */
+    Matrix<T, R, C>& setRow(const unsigned int i, const Vector<T, R> &v)
+    {
+      assert((0 <= i) && (i < R));
+
+      data[i] = v;
+
+      return *this;
+    }
+
+    /** \brief Sets the column of the matrix
+     * \param[in] j number of column.
+     * \param[in] v column vector.
+     *
+     */
+    Matrix<T, R, C>& setColumn(const unsigned int j, const Vector<T, C> &v)
+    {
+      assert((0 <= j) && (j < C));
+
+      for(unsigned int i = 0; i < C; ++i)
+      {
+        data[i][j] = v[i];
+      }
+
+      return *this;
+    }
+
     /** \brief Subscript operator.
      * \param[in] i vector index.
      *
      */
     inline T& operator()(const unsigned int i, const unsigned int j)
     {
-      assert((0 <= i) && (i < N));
-      assert((0 <= j) && (j < N));
+      assert((0 <= i) && (i < R));
+      assert((0 <= j) && (j < C));
 
       return data[i][j];
     }
@@ -617,8 +637,8 @@ template<class T, unsigned int N> class Matrix
      */
     inline const T& operator()(const unsigned int i, const unsigned int j) const
     {
-      assert((0 <= i) && (i < N));
-      assert((0 <= j) && (j < N));
+      assert((0 <= i) && (i < R));
+      assert((0 <= j) && (j < C));
 
       return data[i][j];
     }
@@ -627,9 +647,9 @@ template<class T, unsigned int N> class Matrix
      * \param[in] i vector index.
      *
      */
-    inline Vector<T, N>& operator[](const unsigned int i)
+    inline Vector<T, C>& operator[](const unsigned int i)
     {
-      assert((0 <= i) && (i < N));
+      assert((0 <= i) && (i < R));
 
       return data[i];
     }
@@ -638,9 +658,9 @@ template<class T, unsigned int N> class Matrix
      * \param[in] i vector index.
      *
      */
-    inline const Vector<T, N>& operator[](const unsigned int i) const
+    inline const Vector<T, C>& operator[](const unsigned int i) const
     {
-      assert((0 <= i) && (i < N));
+      assert((0 <= i) && (i < R));
 
       return data[i];
     }
@@ -648,9 +668,9 @@ template<class T, unsigned int N> class Matrix
     /** \brief Unary operator +
      *
      */
-    inline const Matrix<T, N> operator+()
+    inline const Matrix<T, R, C> operator+()
     {
-      Matrix<T, N> result = *this;
+      Matrix<T, R, C> result = *this;
 
       return result;
     }
@@ -658,10 +678,10 @@ template<class T, unsigned int N> class Matrix
     /** \brief Unary operator -
      *
      */
-    inline const Matrix<T, N> operator-()
+    inline const Matrix<T, R, C> operator-()
     {
-      Matrix<T, N> result;
-      for(unsigned int i = 0; i < N; ++i)
+      Matrix<T, R, C> result;
+      for(unsigned int i = 0; i < R; ++i)
       {
         result[i] = -data[i];
       }
@@ -669,16 +689,16 @@ template<class T, unsigned int N> class Matrix
       return result;
     }
 
-    /** \brief Transpose operator.
+    /** \brief Transpose operation.
      *
      */
-    Matrix<T, N> transpose()
+    Matrix<T, R, C> transpose() const
     {
-      Matrix<T, N> result;
+      Matrix<T, R, C> result;
 
-      for(unsigned int i = 0; i < N; ++i)
+      for(unsigned int i = 0; i < R; ++i)
       {
-        for(unsigned int j = 0; j < N; ++j)
+        for(unsigned int j = 0; j < C; ++j)
         {
           result[i][j] = data[j][i];
         }
@@ -687,38 +707,44 @@ template<class T, unsigned int N> class Matrix
       return result;
     }
 
-    Matrix<T, N> inverse()
+    /** \brief Inverse operation.
+     *
+     */
+    Matrix<T, R, C> inverse() const
     {
+      assert(R == C);
+
       // augmenting the square matrix with the identity matrix of the same dimensions.
-      std::vector<Vector<T, 2*N>> result;
-      result.reserve(N);
-      for (unsigned int i = 0; i < N; i++)
+      std::vector<Vector<T, 2*C>> result;
+      result.reserve(R);
+      for (unsigned int i = 0; i < R; i++)
       {
-        result.push_back(Vector<T,2*N>());
+        result.push_back(Vector<T,2*C>(0));
       }
 
-      for (unsigned int i = 0; i < N; i++)
+      for (unsigned int i = 0; i < R; i++)
       {
-        result[i][i+N] = 1;
+        result[i][i+C] = 1;
 
-        for (unsigned int j = 0; j < N; j++)
+        for (unsigned int j = 0; j < C; j++)
         {
           result[i][j]   = data[i][j];
         }
       }
 
       // first pass
-      for (unsigned int i = 0; i < N-1; i++)
+      for (unsigned int i = 0; i < R-1; i++)
       {
         // normalize the first row
-        for (int j = (2*N)-1; j >= 0; j--)
+        for (int j = (2*C)-1; j >= 0; j--)
         {
           result[i][j] /= result[i][i];
         }
-        for (unsigned int k = i + 1; k < N; k++)
+
+        for (unsigned int k = i + 1; k < R; k++)
         {
           float coeff = result[k][i];
-          for (unsigned int j = 0; j < 2*N; j++)
+          for (unsigned int j = 0; j < 2*C; j++)
           {
             result[k][j] -= result[i][j] * coeff;
           }
@@ -726,18 +752,18 @@ template<class T, unsigned int N> class Matrix
       }
 
       // normalize the last row
-      for (unsigned int j = (2*N) - 1; j >= N-1; j--)
+      for (unsigned int j = (2*C) - 1; j >= C-1; j--)
       {
-        result[N-1][j] /= result[N-1][N-1];
+        result[R-1][j] /= result[R-1][R-1];
       }
 
       // second pass
-      for (int i = N-1; i > 0; i--)
+      for (int i = R-1; i > 0; i--)
       {
         for (int k = i - 1; k >= 0; k--)
         {
           float coeff = result[k][i];
-          for (unsigned int j = 0; j < 2*N; j++)
+          for (unsigned int j = 0; j < 2*C; j++)
           {
             result[k][j] -= result[i][j] * coeff;
           }
@@ -745,12 +771,12 @@ template<class T, unsigned int N> class Matrix
       }
 
       // cut the identity matrix back
-      Matrix<T,N> truncate;
-      for (unsigned int i = 0; i < N; i++)
+      Matrix<T, R, C> truncate;
+      for (unsigned int i = 0; i < R; i++)
       {
-        for (unsigned int j = 0; j < N; j++)
+        for (unsigned int j = 0; j < C; j++)
         {
-          truncate[i][j] = result[i][j + N];
+          truncate[i][j] = result[i][j + C];
         }
       }
 
@@ -762,17 +788,17 @@ template<class T, unsigned int N> class Matrix
      * \param[in] j column.
      *
      */
-    Matrix<T, N-1> sub(unsigned int i, unsigned int j)
+    Matrix<T, R-1, C-1> sub(unsigned int i, unsigned int j) const
     {
-      Matrix<T, N-1> result;
+      Matrix<T, R-1, C-1> result;
 
       unsigned int row = 0;
-      for(unsigned int k = 0; k < N; ++k)
+      for(unsigned int k = 0; k < R; ++k)
       {
-        Vector<T, N-1> v;
+        Vector<T, C-1> v;
         if(k == i) continue;
         unsigned int column = 0;
-        for(unsigned int l = 0; l < N; ++l)
+        for(unsigned int l = 0; l < C; ++l)
         {
           if(l == j) continue;
           v[column++] = data[k][l];
@@ -787,14 +813,16 @@ template<class T, unsigned int N> class Matrix
     /** \brief Determinant operator.
      *
      */
-    float determinant()
+    float determinant() const
     {
-      if(N == 2) return (data[0][0]*data[1][1]) - (data[0][1]*data[1][0]);
+      assert(R = C);
+
+      if(R == 2) return (data[0][0]*data[1][1]) - (data[0][1]*data[1][0]);
 
       float result{0};
       auto sign = [](unsigned int i) { return (i % 2) ? -1 : 1; };
 
-      for(unsigned int i = 0; i < N; ++i)
+      for(unsigned int i = 0; i < C; ++i)
       {
         result += sign(i) * data[0,i] * sub(0,i).determinant();
       }
@@ -805,11 +833,11 @@ template<class T, unsigned int N> class Matrix
     /** \brief Identity operator.
      *
      */
-    Matrix<T, N>& identity()
+    Matrix<T, R, C>& identity()
     {
-      for(unsigned int i = 0; i < N; ++i)
+      for(unsigned int i = 0; i < R; ++i)
       {
-        for(unsigned int j = 0; j < N; ++j)
+        for(unsigned int j = 0; j < C; ++j)
         {
           data[i][j] = ((i == j) ? T(1) : T(0));
         }
@@ -822,9 +850,9 @@ template<class T, unsigned int N> class Matrix
      * \param[in] i row index.
      *
      */
-    Vector<T, N> row(const unsigned int i) const
+    Vector<T, C> row(const unsigned int i) const
     {
-      assert((0 <= i) && (i < N));
+      assert((0 <= i) && (i < R));
 
       return data[i];
     }
@@ -833,12 +861,12 @@ template<class T, unsigned int N> class Matrix
      * \param[in] i column index.
      *
      */
-    Vector<T, N> column(const unsigned int i) const
+    Vector<T, R> column(const unsigned int i) const
     {
-      assert((0 <= i) && (i < N));
+      assert((0 <= i) && (i < C));
 
-      Vector<T, N> result;
-      for(unsigned int j = 0; j < N; ++j)
+      Vector<T, R> result;
+      for(unsigned int j = 0; j < R; ++j)
       {
         result[j] = data[j][i];
       }
@@ -847,7 +875,7 @@ template<class T, unsigned int N> class Matrix
     }
 
   private:
-    std::vector<Vector<T, N>> data;
+    std::vector<Vector<T, C>> data;
 };
 
 /** \brief operator <<
@@ -855,12 +883,13 @@ template<class T, unsigned int N> class Matrix
  * \param[in] m matrix.
  *
  */
-template<class T, unsigned int N> std::ostream& operator<<(std::ostream &stream, const Matrix<T, N> &m)
+template<class T, unsigned int R, unsigned int C> std::ostream& operator<<(std::ostream &stream, const Matrix<T, R, C> &m)
 {
-  for(unsigned int i = 0; i < N; ++i)
+  for(unsigned int i = 0; i < R; ++i)
   {
     stream << m[i] << std::endl;
   }
+
   return stream;
 }
 
@@ -869,13 +898,13 @@ template<class T, unsigned int N> std::ostream& operator<<(std::ostream &stream,
  * \param[in] b matrix.
  *
  */
-template<class T, unsigned int N> inline Matrix<T, N> operator+(const Matrix<T, N> &a, const Matrix<T, N> &b)
+template<class T, unsigned int R, unsigned int C> inline Matrix<T, R, C> operator+(const Matrix<T, R, C> &a, const Matrix<T, R, C> &b)
 {
-  Matrix<T, N> tmp(0);
+  Matrix<T, R, C> tmp(0);
 
-  for(unsigned int i = 0; i < N; ++i)
+  for(unsigned int i = 0; i < R; ++i)
   {
-    for(unsigned int j = 0; j < N; ++j)
+    for(unsigned int j = 0; j < C; ++j)
     {
       tmp(i, j) = a(i, j) + b(i, j);
     }
@@ -889,13 +918,13 @@ template<class T, unsigned int N> inline Matrix<T, N> operator+(const Matrix<T, 
  * \param[in] value T value.
  *
  */
-template<class T, unsigned int N> inline Matrix<T, N> operator+(const Matrix<T, N> &m, const T &value)
+template<class T, unsigned int R, unsigned int C> inline Matrix<T, R, C> operator+(const Matrix<T, R, C> &m, const T &value)
 {
-  Matrix<T, N> tmp(0);
+  Matrix<T, R, C> tmp(0);
 
-  for(unsigned int i = 0; i < N; ++i)
+  for(unsigned int i = 0; i < R; ++i)
   {
-    for(unsigned int j = 0; j < N; ++j)
+    for(unsigned int j = 0; j < C; ++j)
     {
       tmp(i, j) = m(i, j) + value;
     }
@@ -909,13 +938,13 @@ template<class T, unsigned int N> inline Matrix<T, N> operator+(const Matrix<T, 
  * \param[in] b matrix.
  *
  */
-template<class T, unsigned int N> inline Matrix<T, N> operator-(const Matrix<T, N> &a, const Matrix<T, N> &b)
+template<class T, unsigned int R, unsigned int C> inline Matrix<T, R, C> operator-(const Matrix<T, R, C> &a, const Matrix<T, R, C> &b)
 {
-  Matrix<T, N> tmp(0);
+  Matrix<T, R, C> tmp(0);
 
-  for(unsigned int i = 0; i < N; ++i)
+  for(unsigned int i = 0; i < R; ++i)
   {
-    for(unsigned int j = 0; j < N; ++j)
+    for(unsigned int j = 0; j < C; ++j)
     {
       tmp(i, j) = a(i, j) - b(i, j);
     }
@@ -928,13 +957,13 @@ template<class T, unsigned int N> inline Matrix<T, N> operator-(const Matrix<T, 
  * \param[in] m matrix.
  * \param[in] value T value.
  */
-template<class T, unsigned int N> inline Matrix<T, N> operator-(const Matrix<T, N> &m, const T &value)
+template<class T, unsigned int R, unsigned int C> inline Matrix<T, R, C> operator-(const Matrix<T, R, C> &m, const T &value)
 {
-  Matrix<T, N> tmp;
+  Matrix<T, R, C> tmp;
 
-  for(unsigned int i = 0; i < N; ++i)
+  for(unsigned int i = 0; i < R; ++i)
   {
-    for(unsigned int j = 0; j < N; ++j)
+    for(unsigned int j = 0; j < C; ++j)
     {
       tmp(i, j) = m(i, j) - value;
     }
@@ -948,13 +977,13 @@ template<class T, unsigned int N> inline Matrix<T, N> operator-(const Matrix<T, 
  * \parma[in] value T value.
  *
  */
-template<class T, unsigned int N> inline Matrix<T, N> operator/(const Matrix<T, N> &m, const T &value)
+template<class T, unsigned int R, unsigned int C> inline Matrix<T, R, C> operator/(const Matrix<T, R, C> &m, const T &value)
 {
-  Matrix<T, N> tmp;
+  Matrix<T, R, C> tmp;
 
-  for(unsigned int i = 0; i < N; ++i)
+  for(unsigned int i = 0; i < R; ++i)
   {
-    for(unsigned int j = 0; j < N; ++j)
+    for(unsigned int j = 0; j < C; ++j)
     {
       tmp(i, j) = m(i, j) / value;
     }
@@ -968,26 +997,19 @@ template<class T, unsigned int N> inline Matrix<T, N> operator/(const Matrix<T, 
  * \param[in] b matrix.
  *
  */
-template<class T, unsigned int N> inline Matrix<T, N> operator*(const Matrix<T, N> &a, const Matrix<T, N> &b)
+template<class T, unsigned int R, unsigned int C1, unsigned int C2> Matrix<T, R, C2> operator*(const Matrix<T, R, C1>& m, const Matrix<T, C1, C2>& n)
 {
-  Matrix<T, N> tmp;
-  T sum;
+  Matrix<T, R, C2> result;
 
-  for(unsigned int i = 0; i < N; ++i)
+  for (unsigned int i = 0; i < R; ++i)
   {
-    for(unsigned int k = 0; k < N; ++k)
+    for(unsigned int j = 0; j < C2; ++j)
     {
-      sum = 0;
-      for(unsigned int j = 0; j < N; ++j)
-      {
-        sum = sum + (a(i, j) * b(j, k));
-      }
-
-      tmp(i, k) = sum;
+      result[i][j] = m[i] * n.column(j);
     }
   }
 
-  return tmp;
+  return result;
 }
 
 /** \brief operator* (binary, value)
@@ -995,11 +1017,11 @@ template<class T, unsigned int N> inline Matrix<T, N> operator*(const Matrix<T, 
  * \param[in] value T value.
  *
  */
-template<class T, unsigned int N> inline Matrix<T, N> operator*(const Matrix<T, N> &m, const T &value)
+template<class T, unsigned int R, unsigned int C> inline Matrix<T, R, C> operator*(const Matrix<T, R, C> &m, const T &value)
 {
-  Matrix<T, N> tmp;
+  Matrix<T, R, C> tmp;
 
-  for(unsigned int i = 0; i < N; ++i)
+  for(unsigned int i = 0; i < R; ++i)
   {
     tmp[i] = m[i] * value;
   }
@@ -1012,16 +1034,9 @@ template<class T, unsigned int N> inline Matrix<T, N> operator*(const Matrix<T, 
  * \param[in] b matrix.
  *
  */
-template<class T, unsigned int N> inline Matrix<T, N> operator*(const T scalar, const Matrix<T, N> &a)
+template<class T, class U, unsigned int R, unsigned int C> inline Matrix<T, R, C> operator*(const U scalar, const Matrix<T, R, C> &m)
 {
-  Matrix<T, N> tmp;
-
-  for(unsigned int i = 0; i < N; ++i)
-  {
-    tmp[i] = a[i] * scalar;
-  }
-
-  return tmp;
+  return m * T(scalar);
 }
 
 /** \brief operator* (binary, vector)
@@ -1029,53 +1044,20 @@ template<class T, unsigned int N> inline Matrix<T, N> operator*(const T scalar, 
  * \param[in] m matrix.
  *
  */
-template<class T, unsigned int N> inline Vector<T, N> operator*(const Vector<T, N> &v, const Matrix<T, N> &m)
+template<class T, unsigned int R, unsigned int C> Vector<T, R> operator*(const Matrix<T, R, C>& m, const Vector<T, C>& v)
 {
-  Vector<T, N> tmp;
-  T sum;
+  Vector<T, R> result;
 
-  for(unsigned int i = 0; i < N; ++i)
+  for(unsigned int i = 0; i < R; ++i)
   {
-    sum = 0;
-
-    for(unsigned int j = 0; j < N; ++j)
-    {
-      sum = sum + (m(j, i) * v[j]);
-    }
-
-    tmp[i] = sum;
+    result[i] = m[i] * v;
   }
 
-  return tmp;
-}
-
-/** \brief operator* (binary, vector)
- * \param[in] m matrix.
- * \param[in] v vector.
- *
- */
-template<class T, unsigned int N> inline Vector<T, N> operator*(const Matrix<T, N> &m, const Vector<T, N> &v)
-{
-  Vector<T, N> tmp;
-  T sum;
-
-  for(unsigned int i = 0; i < N; ++i)
-  {
-    sum = 0;
-
-    for(unsigned int j = 0; j < N; ++j)
-    {
-      sum = sum + (m(i, j) * v[j]);
-    }
-
-    tmp[i] = sum;
-  }
-
-  return tmp;
+  return result;
 }
 
 //--------------------------------------------------------------------
-// Special cases
+// Special cases: cross product 3x3
 //
 template<class T> inline Vector<T,3> operator^ (const Vector<T,3> &v, const Vector<T,3> &w)
 {
@@ -1087,13 +1069,13 @@ template<class T> inline Vector<T,3> operator^ (const Vector<T,3> &v, const Vect
   return result;
 }
 
-using Vector4ui  = Vector<unsigned int,4>;
-using Vector4i   = Vector<int, 4>;
-using Vector4f   = Vector<float, 4>;
-using Vector4d   = Vector<double, 4>;
-using Vector4ul  = Vector<unsigned long int, 4>;
-using Vector4ull = Vector<unsigned long long int, 4>;
-using Vector4ll  = Vector<long long int, 4>;
+using Vector2ui  = Vector<unsigned int, 2>;
+using Vector2i   = Vector<int, 2>;
+using Vector2f   = Vector<float, 2>;
+using Vector2d   = Vector<double, 2>;
+using Vector2ul  = Vector<unsigned long int, 2>;
+using Vector2ull = Vector<unsigned long long int, 2>;
+using Vector2ll  = Vector<long long int, 2>;
 
 using Vector3ui  = Vector<unsigned int,3>;
 using Vector3i   = Vector<int, 3>;
@@ -1103,22 +1085,22 @@ using Vector3ul  = Vector<unsigned long int, 3>;
 using Vector3ull = Vector<unsigned long long int, 3>;
 using Vector3ll  = Vector<long long int, 3>;
 
-using Vector2ui  = Vector<unsigned int, 2>;
-using Vector2i   = Vector<int, 2>;
-using Vector2f   = Vector<float, 2>;
-using Vector2d   = Vector<double, 2>;
-using Vector2ul  = Vector<unsigned long int, 2>;
-using Vector2ull = Vector<unsigned long long int, 2>;
-using Vector2ll  = Vector<long long int, 2>;
+using Vector4ui  = Vector<unsigned int,4>;
+using Vector4i   = Vector<int, 4>;
+using Vector4f   = Vector<float, 4>;
+using Vector4d   = Vector<double, 4>;
+using Vector4ul  = Vector<unsigned long int, 4>;
+using Vector4ull = Vector<unsigned long long int, 4>;
+using Vector4ll  = Vector<long long int, 4>;
 
-using Matrix3ui = Matrix<unsigned int, 3>;
-using Matrix3i  = Matrix<int, 3>;
-using Matrix3f  = Matrix<float, 3>;
-using Matrix3d  = Matrix<double, 3>;
+using Matrix3ui = Matrix<unsigned int, 3, 3>;
+using Matrix3i  = Matrix<int, 3, 3>;
+using Matrix3f  = Matrix<float, 3, 3>;
+using Matrix3d  = Matrix<double, 3, 3>;
 
-using Matrix4ui = Matrix<unsigned int, 4>;
-using Matrix4i  = Matrix<int, 4>;
-using Matrix4f  = Matrix<float, 4>;
-using Matrix4d  = Matrix<double, 4>;
+using Matrix4ui = Matrix<unsigned int, 4, 4>;
+using Matrix4i  = Matrix<int, 4, 4>;
+using Matrix4f  = Matrix<float, 4, 4>;
+using Matrix4d  = Matrix<double, 4, 4>;
 
 #endif // ALGEBRA_H_
