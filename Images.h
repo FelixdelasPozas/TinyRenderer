@@ -122,11 +122,10 @@ namespace Images
      */
     Color & operator*(const float c)
     {
-      assert(c >= 0 && c <= 1);
-      r *= c;
-      g *= c;
-      b *= c;
-      a *= c;
+      for(int i= 0; i < bytespp; ++i)
+      {
+        raw[i] = std::min(255.f, std::max(0.f, static_cast<float>(raw[i] * c)));
+      }
 
       return *this;
     }
@@ -136,24 +135,74 @@ namespace Images
      */
     Color & inverse()
     {
-      r = 255-r;
-      g = 255-g;
-      b = 255-b;
+      for(int i= 0; i < (bytespp == 4 ? bytespp-1 : bytespp); ++i)
+      {
+        raw[i] = 255 - raw[i];
+      }
 
       return *this;
     }
 
-    /** \brief Additive operation
+    /** \brief Additive operation +=
+     * \param[in] color color to add.
      *
      */
-    Color & operator+(const Color &color)
+    Color & operator+=(const Color &color)
     {
-      r = std::min(255, r + color.r);
-      g = std::min(255, g + color.g);
-      b = std::min(255, b + color.b);
-      a = std::min(255, a + color.a);
+      auto temp = color.to(bytespp);
+
+      for(int i = 0; i < bytespp; ++i)
+      {
+        raw[i] = std::min(255, raw[i] + temp.raw[i]);
+      }
 
       return *this;
+    }
+
+    /** \brief Additive operation +
+     * \param[in] color color to add.
+     *
+     *
+     */
+    Color operator+(const Color &color)
+    {
+      auto result = color.to(bytespp);
+
+      for(int i = 0; i < result.bytespp; ++i)
+      {
+        result.raw[i] = std::min(255, raw[i] + color.raw[i]);
+      }
+
+      return result;
+    }
+
+    /** \brief Converts the color to a new bytes per pixel format.
+     * \param[in] bpp bits per pixel of the new color.
+     *
+     */
+    Color to(const int bpp) const
+    {
+      Color result{r,g,b,a};
+      result.bytespp = bpp;
+
+      if(bpp != bytespp)
+      {
+        switch(bytespp)
+        {
+          case 1:
+            result.raw[1] = result.raw[2] = result.raw[0];
+            if(bpp == 4) result.raw[3] = 255;
+            break;
+          case 3:
+            if(bpp == 4) result.raw[3] = 255;
+            // no break
+          case 4:
+            if(bpp == 1) result.raw[0] = static_cast<int>(result.raw[0] + result.raw[1] + result.raw[2])/3;
+            break;
+        }
+      }
+
+      return result;
     }
 
     /** \brief operator<<

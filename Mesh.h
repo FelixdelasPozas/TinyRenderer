@@ -88,6 +88,13 @@ class Mesh
     std::vector<unsigned long> getuvIds(unsigned long idx)
     { return m_faces[idx]._uv; }
 
+    /** \brief Returns the normal vector indexes of the given face index in the faces list.
+     * \param[in] idx face index.
+     *
+     */
+    std::vector<unsigned long> getFaceNormals(unsigned long idx)
+    { return m_faces[idx]._normal; }
+
     /** \brief Returns the texture coordinates for the given index.
      * \param[in] idx vertex index.
      *
@@ -215,29 +222,52 @@ class Mesh
      * \param[in] texture texture image object.
      *
      */
-    void addAdditive(std::shared_ptr<Images::Image> texture)
-    { m_additives.push_back(texture); }
+    void setGlowTexture(std::shared_ptr<Images::Image> texture)
+    { m_glow = texture; }
 
     /** \brief Returns the glow texture of the model.
      *
      */
-    unsigned int additives() const
-    { return m_additives.size(); }
+    std::shared_ptr<Images::Image> GlowTexture() const
+    { return m_glow; }
 
-    /** \brief Returns the glow value for the given coordinates.
+    /** \brief Returns the glow color for the given texture coordinates.
      * \param[in] u u coordinate.
      * \param[in] v v coordinate.
      *
      */
-    Images::Color getAdditives(const float u, const float v);
+    Images::Color getGlow(const float u, const float v);
 
-    /** \brief Returns the glow value for the given coordinates.
+    /** \brief Returns the glow color for the given texture coordinates.
      * \param[in] uv Vector2f coordinates
      *
      */
-    Images::Color getAdditives(Vector2f uv)
-    { return getAdditives(uv[0], uv[1]); }
+    Images::Color getGlow(Vector2f uv)
+    { return getGlow(uv[0], uv[1]); }
 
+    /** \brief Returns true if the model has specular texture and false otherwise.
+     *
+     */
+    bool hasSpecular() const
+    { return m_specular != nullptr; };
+
+    /** \brief Returns true if the model has Darboux normal texture and false otherwise.
+     *
+     */
+    bool hasTangent() const
+    { return m_tangent != nullptr; };
+
+    /** \brief Returns true if the model has normals texture and false otherwise.
+     *
+     */
+    bool hasNormalMap() const
+    { return m_normalMap != nullptr; }
+
+    /** \brief Returns true if the model has glow texture and false otherwise.
+     *
+     */
+    bool hasGlow() const
+    { return m_glow != nullptr; }
 
   private:
     using vertex = Vector3f;
@@ -311,6 +341,7 @@ class Mesh
     std::shared_ptr<Images::Image> m_normalMap; /** normalMap texture.       */
     std::shared_ptr<Images::Image> m_specular;  /** specular texture.        */
     std::shared_ptr<Images::Image> m_tangent;   /** tangent-space normal map.*/
+    std::shared_ptr<Images::Image> m_glow;      /** glow texture.            */
 
     std::list<std::shared_ptr<Images::Image>> m_additives; /** additive to diffuse textures.  */
 };

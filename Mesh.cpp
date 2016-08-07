@@ -35,6 +35,7 @@ Mesh::Mesh()
 , m_normalMap{nullptr}
 , m_specular {nullptr}
 , m_tangent  {nullptr}
+, m_glow     {nullptr}
 {
 }
 
@@ -250,14 +251,7 @@ Vector3f Mesh::getTangent(const float u, const float v)
 }
 
 //--------------------------------------------------------------------
-Images::Color Mesh::getAdditives(const float u, const float v)
+Images::Color Mesh::getGlow(const float u, const float v)
 {
-  Color color;
-
-  for(auto texture: m_additives)
-  {
-    color = color + texture->get(u*texture->getWidth(), v*texture->getHeight());
-  }
-
-  return color;
+  return m_glow->get(u*m_glow->getWidth(), v*m_glow->getHeight());
 }
