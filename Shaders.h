@@ -23,6 +23,7 @@
 // Project
 #include <GL_Impl.h>
 #include <Algebra.h>
+#include <Utils.h>
 
 /** \struct MultiShader
  * \brief Use of multiple shaders for image generation.
@@ -153,5 +154,32 @@ struct DarbouxNormalShader
     const Matrix4f uniform_transform    = ViewPort*Projection*ModelView;
     const Matrix4f uniform_transform_TI = (Projection*ModelView).transpose().inverse();
 };
+
+//--------------------------------------------------------------------
+struct DepthShader
+: public GL_Impl::Shader
+{
+    virtual Vector3f vertex(int iface, int nthvert);
+
+    virtual bool fragment(Vector3f bar, Images::Color &color);
+
+    Matrix3f            varying_vertex;
+    Matrix4f            uniform_transform = ViewPort*Projection*ModelView;
+    std::shared_ptr<Utils::zBuffer> depthBuffer;
+};
+
+//--------------------------------------------------------------------
+struct HardShadowsShader
+: public DarbouxNormalShader
+{
+    virtual Vector3f vertex(int iface, int nthvert);
+
+    virtual bool fragment(Vector3f bar, Images::Color &color);
+
+    Matrix3f            varying_dVertex;
+    Matrix4f            uniform_transform_S;
+    std::shared_ptr<Utils::zBuffer> depthBuffer;
+};
+
 
 #endif // SHADERS_H_

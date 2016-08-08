@@ -284,3 +284,58 @@ bool DarbouxNormalShader::fragment(Vector3f baricentric, Images::Color& color)
 
   return false;
 }
+
+//--------------------------------------------------------------------
+Vector3f DepthShader::vertex(int iface, int nthvert)
+{
+  const auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
+  varying_vertex.setColumn(nthvert, (uniform_transform * uniform_mesh->getVertex(vertexId).augment()).project());
+
+  return varying_vertex.column(nthvert);
+}
+
+
+//--------------------------------------------------------------------
+bool DepthShader::fragment(Vector3f baricentric, Images::Color& color)
+{
+  auto vertex = varying_vertex * baricentric;
+
+  if(0 <= vertex[0] && vertex[0] < depthBuffer->getWidth()-1 && 0 <= vertex[1] && vertex[1] < depthBuffer->getHeight()-1)
+  {
+    depthBuffer->checkAndSet(vertex[0], vertex[1], vertex[2]);
+  }
+
+  return false;
+}
+
+//--------------------------------------------------------------------
+Vector3f HardShadowsShader::vertex(int iface, int nthvert)
+{
+  const auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
+  varying_dVertex.setColumn(nthvert, (uniform_transform_S * uniform_mesh->getVertex(vertexId).augment()).project());
+
+  return DarbouxNormalShader::vertex(iface, nthvert);
+}
+
+//--------------------------------------------------------------------
+bool HardShadowsShader::fragment(Vector3f baricentric, Images::Color& color)
+{
+  DarbouxNormalShader::fragment(baricentric, color);
+
+  auto vertex = varying_dVertex * baricentric;
+
+  if(0 <= vertex[0] && vertex[0] < depthBuffer->getWidth()-1 && 0 <= vertex[1] && vertex[1] < depthBuffer->getHeight()-1)
+  {
+    if(depthBuffer->get(vertex[0], vertex[1]) > vertex[2]+43.34)
+    {
+      // multiply the non-ambient part of the color.
+      auto ambient = uniform_ambient_coeff * uniform_ambient_light;
+      for(int i = 0; i < color.bytespp; ++i)
+      {
+        color.raw[i] = std::min(255.f, ((color.raw[i]-ambient)*0.3f)+ambient);
+      }
+    }
+  }
+
+  return false;
+}

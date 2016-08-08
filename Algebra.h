@@ -240,7 +240,7 @@ template<class T, unsigned int N> class Vector
     /** \brief Returns the norm of the vector.
      *
      */
-    inline double norm()
+    inline double norm() const
     {
       double sum = 0;
       for(unsigned int i = 0; i < N; ++i)

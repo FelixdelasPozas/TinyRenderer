@@ -117,7 +117,7 @@ namespace Images
     }
 
     /** \brief Color multiplication operator
-     * \param[in] c constant in [0,1]
+     * \param[in] c numerical value.
      *
      */
     Color & operator*(const float c)
@@ -128,6 +128,23 @@ namespace Images
       }
 
       return *this;
+    }
+
+    /** \brief Color multiplication operator for const.
+     * \param[in] c numerical value.
+     *
+     */
+    Color operator*(const float c) const
+    {
+      Color result;
+      result.bytespp = bytespp;
+
+      for(int i= 0; i < bytespp; ++i)
+      {
+        result.raw[i] = std::min(255.f, std::max(0.f, static_cast<float>(raw[i] * c)));
+      }
+
+      return result;
     }
 
     /** \brief Color inversion, alpha untouched.
