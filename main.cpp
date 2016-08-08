@@ -44,50 +44,78 @@ std::vector<std::shared_ptr<Mesh>> loadMeshes()
 {
   std::vector<std::shared_ptr<Mesh>> meshes;
 
-  auto diffuseTex = TGA::read("obj/diablo3_pose/diablo3_pose_diffuse.tga");
+  // AFRICAN HEAD
+  auto diffuseTex = TGA::read("obj/african_head/african_head_diffuse.tga");
   assert(diffuseTex);
   diffuseTex->flipVertically();
 
-  auto normalMapTex = TGA::read("obj/diablo3_pose/diablo3_pose_nm.tga");
+  auto normalMapTex = TGA::read("obj/african_head/african_head_nm.tga");
   assert(normalMapTex);
   normalMapTex->flipVertically();
 
-  auto specular = TGA::read("obj/diablo3_pose/diablo3_pose_spec.tga");
+  auto specular = TGA::read("obj/african_head/african_head_spec.tga");
   assert(specular);
   specular->flipVertically();
 
-  auto tangent = TGA::read("obj/diablo3_pose/diablo3_pose_nm_tangent.tga");
+  auto tangent = TGA::read("obj/african_head/african_head_nm_tangent.tga");
   assert(tangent);
   tangent->flipVertically();
 
-  auto glow = TGA::read("obj/diablo3_pose/diablo3_pose_glow.tga");
-  assert(glow);
-  glow->flipVertically();
-
-  auto mesh = Mesh::read_Wavefront("obj/diablo3_pose/diablo3_pose.obj");
+  auto mesh = Mesh::read_Wavefront("obj/african_head/african_head.obj");
   assert(mesh);
   mesh->setDiffuseTexture(diffuseTex);
   mesh->setNormalMap(normalMapTex);
   mesh->setSpecular(specular);
   mesh->setTangent(tangent);
-  mesh->setGlowTexture(glow);
 
   meshes.push_back(mesh);
 
-  diffuseTex = TGA::read("obj/floor_diffuse.tga");
-  assert(diffuseTex);
-  diffuseTex->flipVertically();
+  // DIABLO 3
+//  auto diffuseTex = TGA::read("obj/diablo3_pose/diablo3_pose_diffuse.tga");
+//  assert(diffuseTex);
+//  diffuseTex->flipVertically();
+//
+//  auto normalMapTex = TGA::read("obj/diablo3_pose/diablo3_pose_nm.tga");
+//  assert(normalMapTex);
+//  normalMapTex->flipVertically();
+//
+//  auto specular = TGA::read("obj/diablo3_pose/diablo3_pose_spec.tga");
+//  assert(specular);
+//  specular->flipVertically();
+//
+//  auto tangent = TGA::read("obj/diablo3_pose/diablo3_pose_nm_tangent.tga");
+//  assert(tangent);
+//  tangent->flipVertically();
+//
+//  auto glow = TGA::read("obj/diablo3_pose/diablo3_pose_glow.tga");
+//  assert(glow);
+//  glow->flipVertically();
+//
+//  auto mesh = Mesh::read_Wavefront("obj/diablo3_pose/diablo3_pose.obj");
+//  assert(mesh);
+//  mesh->setDiffuseTexture(diffuseTex);
+//  mesh->setNormalMap(normalMapTex);
+//  mesh->setSpecular(specular);
+//  mesh->setTangent(tangent);
+//  mesh->setGlowTexture(glow);
+//
+//  meshes.push_back(mesh);
 
-  tangent = TGA::read("obj/floor_nm_tangent.tga");
-  assert(tangent);
-  tangent->flipVertically();
-
-  mesh = Mesh::read_Wavefront("obj/floor.obj");
-  assert(mesh);
-  mesh->setDiffuseTexture(diffuseTex);
-  mesh->setTangent(tangent);
-
-  meshes.push_back(mesh);
+  // FLOOR
+//  diffuseTex = TGA::read("obj/floor_diffuse.tga");
+//  assert(diffuseTex);
+//  diffuseTex->flipVertically();
+//
+//  tangent = TGA::read("obj/floor_nm_tangent.tga");
+//  assert(tangent);
+//  tangent->flipVertically();
+//
+//  mesh = Mesh::read_Wavefront("obj/floor.obj");
+//  assert(mesh);
+//  mesh->setDiffuseTexture(diffuseTex);
+//  mesh->setTangent(tangent);
+//
+//  meshes.push_back(mesh);
 
   return meshes;
 }
@@ -97,11 +125,11 @@ int main(int argc, char *argv[])
 {
   short int width = 1000;
   short int height = 1000;
-  Vector3f eye{1,1,4};
+  Vector3f eye{1,1,40};
   Vector3f center{0,0,0};
   Vector3f up{0,1,0};
 
-  Light = Vector3f{5,5,1}.normalize();
+  Light = Vector3f{1,-1,5}.normalize();
   projection(-1.f/(eye-center).norm());
   viewport(width/8, height/8, width*3/4, height*3/4);
   lookAt(eye, center, up);

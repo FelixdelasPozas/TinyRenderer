@@ -29,11 +29,11 @@ auto minmax = [](float value) { return std::min(1.f, std::max(0.f, value)); };
 //--------------------------------------------------------------------
 Vector3f GouraudShader::vertex(int iface, int nthvert)
 {
-  auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
-  auto normalId = uniform_mesh->getFaceNormals(iface)[nthvert];
-  auto intensity = Light.normalize() * uniform_mesh->getNormal(normalId).normalize();
+  const auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
+  const auto normalId = uniform_mesh->getFaceNormals(iface)[nthvert];
+  const auto intensity = Light.normalize() * uniform_mesh->getNormal(normalId).normalize();
   varying_intensity[nthvert] = minmax(intensity);
-  auto vertex = uniform_mesh->getVertex(vertexId).augment();
+  const auto vertex = uniform_mesh->getVertex(vertexId).augment();
 
   return (uniform_transform*vertex).project();
 }
@@ -41,7 +41,7 @@ Vector3f GouraudShader::vertex(int iface, int nthvert)
 //--------------------------------------------------------------------
 bool GouraudShader::fragment(Vector3f baricentric, Images::Color &color)
 {
-  auto intensity = minmax(varying_intensity * baricentric);
+  const auto intensity = minmax(varying_intensity * baricentric);
   color = Color(255,255,255) * intensity;
 
   return false;
@@ -74,7 +74,7 @@ bool TexturedGouraudShader::fragment(Vector3f baricentric, Images::Color &color)
   Vector2f vectoruv;
   for(unsigned int i = 0; i < 3; ++i) vectoruv += uniform_mesh->getuv(varying_uv_index[i])*baricentric[i];
 
-  auto intensity = minmax(varying_intensity * baricentric);
+  const auto intensity = minmax(varying_intensity * baricentric);
   color = uniform_mesh->getDiffuse(vectoruv) * intensity;
 
   return false;
@@ -92,9 +92,9 @@ bool NormalMapping::fragment(Vector3f baricentric, Images::Color& color)
     normal = uniform_mesh->getNormalMap(uv);
   }
 
-  auto n = (uniform_transform_TI * normal.augment()).project().normalize();
-  auto l = (uniform_transform * Light.augment()).project().normalize();
-  auto intensity = minmax(n*l);
+  const auto n = (uniform_transform_TI * normal.augment()).project().normalize();
+  const auto l = (uniform_transform * Light.augment()).project().normalize();
+  const auto intensity = minmax(n*l);
 
   color = Color(255,255,255)*intensity;
   return false;
@@ -112,9 +112,9 @@ bool TexturedNormalMapping::fragment(Vector3f baricentric, Images::Color& color)
     normal = uniform_mesh->getNormalMap(uv);
   }
 
-  auto n = (uniform_transform_TI * normal.augment()).project().normalize();
-  auto l = (uniform_transform * Light.augment()).project().normalize();
-  auto intensity = minmax(n*l);
+  const auto n = (uniform_transform_TI * normal.augment()).project().normalize();
+  const auto l = (uniform_transform * Light.augment()).project().normalize();
+  const auto intensity = minmax(n*l);
 
   color = uniform_mesh->getDiffuse(uv)*intensity;
   return false;
@@ -125,8 +125,8 @@ Vector3f MultiShader::vertex(int iface, int nthvert)
 {
   if(varying_vertexi == 3) varying_vertexi = 0;
 
-  auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
-  auto vertex = uniform_mesh->getVertex(vertexId).augment();
+  const auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
+  const auto vertex = uniform_mesh->getVertex(vertexId).augment();
 
   varying_svertex[varying_vertexi++] = (uniform_transform*vertex).project();
 
@@ -170,21 +170,21 @@ bool TexturedSpecularShader::fragment(Vector3f baricentric, Images::Color& color
     normal = uniform_mesh->getNormalMap(uv);
   }
 
-  auto n         = (uniform_transform_TI * normal.augment()).project().normalize();
-  auto l         = (uniform_transform * Light.augment()).project().normalize();
-  auto diffuse   = minmax(n*l);
-  color          = uniform_mesh->getDiffuse(uv);
+  const auto n       = (uniform_transform_TI * normal.augment()).project().normalize();
+  const auto l       = (uniform_transform * Light.augment()).project().normalize();
+  const auto diffuse = minmax(n*l);
+  color = uniform_mesh->getDiffuse(uv);
 
   float specular = 0;
   if(uniform_mesh->hasSpecular())
   {
-    auto reflected = (n*(2.f*n*l) - l).normalize();
-    specular  = std::pow(std::max(reflected[2], 0.0f), uniform_mesh->getSpecular(uv));
+    const auto reflected = (n*(n*l*2.f) - l).normalize();
+    specular = std::pow(std::max(reflected[2], 0.0f), uniform_mesh->getSpecular(uv));
   }
 
   for (int i=0; i < color.bytespp; i++)
   {
-    int value = uniform_ambient_coeff*uniform_ambient_value + static_cast<int>(color.raw[i])*(uniform_diffuse_coeff*diffuse + uniform_specular_coeff*specular);
+    const int value = uniform_ambient_coeff*uniform_ambient_value + static_cast<int>(color.raw[i])*(uniform_diffuse_coeff*diffuse + uniform_specular_coeff*specular);
     color.raw[i] = std::min(value, 255);
   }
 
@@ -194,10 +194,10 @@ bool TexturedSpecularShader::fragment(Vector3f baricentric, Images::Color& color
 //--------------------------------------------------------------------
 Vector3f PhongShader::vertex(int iface, int nthvert)
 {
-  auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
+  const auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
   varying_uv_index[nthvert] = uniform_mesh->getuvIds(iface)[nthvert];
   varying_normals[nthvert]  = uniform_mesh->getFaceNormals(iface)[nthvert];
-  auto vertex = uniform_mesh->getVertex(vertexId).augment();
+  const auto vertex = uniform_mesh->getVertex(vertexId).augment();
 
   return (uniform_transform*vertex).project();
 }
@@ -212,7 +212,7 @@ bool PhongShader::fragment(Vector3f baricentric, Images::Color& color)
   for(unsigned int i = 0; i < 3; ++i) normal += uniform_mesh->getNormal(varying_normals[i])*baricentric[i];
   normal.normalize();
 
-  auto diffuse = minmax(normal*Light);
+  const auto diffuse = minmax(normal*Light);
   color = uniform_mesh->getDiffuse(uv)*diffuse;
 
   return false;
@@ -221,8 +221,8 @@ bool PhongShader::fragment(Vector3f baricentric, Images::Color& color)
 //--------------------------------------------------------------------
 Vector3f DarbouxNormalShader::vertex(int iface, int nthvert)
 {
-  auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
-  auto normalId = uniform_mesh->getFaceNormals(iface)[nthvert];
+  const auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
+  const auto normalId = uniform_mesh->getFaceNormals(iface)[nthvert];
 
   varying_uv_index[nthvert] = uniform_mesh->getuvIds(iface)[nthvert];
   varying_normals[nthvert]  = (uniform_transform_TI * uniform_mesh->getNormal(normalId).augment()).project();
@@ -234,13 +234,13 @@ Vector3f DarbouxNormalShader::vertex(int iface, int nthvert)
 //--------------------------------------------------------------------
 bool DarbouxNormalShader::fragment(Vector3f baricentric, Images::Color& color)
 {
-  auto nb = (varying_normals[0] * baricentric[0] + varying_normals[1] * baricentric[1] + varying_normals[2] * baricentric[2]).normalize();
+  const auto nb = (varying_normals[0] * baricentric[0] + varying_normals[1] * baricentric[1] + varying_normals[2] * baricentric[2]).normalize();
 
   auto uv0 = uniform_mesh->getuv(varying_uv_index[0]);
   auto uv1 = uniform_mesh->getuv(varying_uv_index[1]);
   auto uv2 = uniform_mesh->getuv(varying_uv_index[2]);
 
-  auto uv = uv0 * baricentric[0] + uv1 * baricentric[1] + uv2 * baricentric[2]; // final uv coordinates
+  const auto uv = uv0 * baricentric[0] + uv1 * baricentric[1] + uv2 * baricentric[2]; // final uv coordinates
 
   Matrix3f A;
   A[0] = varying_vertex[1] - varying_vertex[0];
@@ -257,22 +257,24 @@ bool DarbouxNormalShader::fragment(Vector3f baricentric, Images::Color& color)
   B.setColumn(1, j.normalize());
   B.setColumn(2, nb);
 
-  auto l = Light;
-  auto n = (B * uniform_mesh->getTangent(uv)).normalize();
-  auto diffuse = minmax(n * l);
-  color = uniform_mesh->getDiffuse(uv);
+  const auto l       = (uniform_transform * Light.augment(0)).project(false).normalize();
+  const auto n       = (uniform_transform_TI * (B * uniform_mesh->getTangent(uv)).augment(0)).project(false).normalize();
+  const auto diffuse = minmax(n*l);
+  color         = uniform_mesh->getDiffuse(uv);
+  auto specular = 0.f;
 
-  float specular = 0;
-  if(uniform_mesh->hasSpecular())
+  if(diffuse != 0 && uniform_mesh->hasSpecular())
   {
-    auto reflected = (n*(2.f*n*l) - l).normalize();
-    specular = std::pow(std::max(reflected[2], 0.0f), uniform_mesh->getSpecular(uv));
+    const auto exp       = uniform_mesh->getSpecular(uv) + 5; // why this +5 fixes specular in diablo?? computations seems right.
+    const auto reflected = (n*(n*l*2.f) - l).normalize();
+    const auto base      = std::max(reflected[2], 0.f);
+    specular = minmax(std::pow(base, exp));
   }
 
   for (int i=0; i < color.bytespp; i++)
   {
-    int value = uniform_ambient_coeff*uniform_ambient_light + static_cast<int>(color.raw[i])*(uniform_diffuse_coeff*diffuse + uniform_specular_coeff*specular);
-    color.raw[i] = std::min(value, 255);
+    int value = uniform_ambient_coeff*uniform_ambient_light + static_cast<float>(color.raw[i])*(uniform_diffuse_coeff*diffuse + uniform_specular_coeff*specular);
+    color.raw[i] = std::max(0, std::min(value, 255));
   }
 
   if(uniform_mesh->hasGlow())

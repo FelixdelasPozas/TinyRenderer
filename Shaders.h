@@ -142,14 +142,15 @@ struct DarbouxNormalShader
     virtual bool fragment(Vector3f bar, Images::Color &color);
 
     float          uniform_glow_coeff     = 1.0; // glow coefficient.
-    float          uniform_specular_coeff = 0.3; // specular coefficient.
-    float          uniform_diffuse_coeff  = 0.6; // diffuse coefficient.
+    float          uniform_specular_coeff = 0.4; // specular coefficient.
+    float          uniform_diffuse_coeff  = 0.5; // diffuse coefficient.
     float          uniform_ambient_coeff  = 0.1; // ambient coefficient.
-    int            uniform_ambient_light  = 50;  // ambient light color addition.
+    float          uniform_ambient_light  = 50.;  // ambient light color addition.
 
     Vector3i       varying_uv_index;       // uv_indexes
     Matrix3f       varying_normals;        // normals indexes.
     Matrix3f       varying_vertex;         // triangle in Projection*Modelview
+    const Matrix4f uniform_transform    = ViewPort*Projection*ModelView;
     const Matrix4f uniform_transform_TI = (Projection*ModelView).transpose().inverse();
 };
 

@@ -240,14 +240,12 @@ float Mesh::getSpecular(const float u, const float v)
 Vector3f Mesh::getTangent(const float u, const float v)
 {
   auto color = m_tangent->get(u*m_tangent->getWidth(), v*m_tangent->getHeight());
+  assert(color.bytespp >= 3);
 
-  Vector3f result;
-  for (int i=0; i<3; i++)
-  {
-    result[2-i] = static_cast<float>(color.raw[i])/255.f*2.f - 1.f;
-  }
+  Vector3f result{color.raw[2], color.raw[1], color.raw[0]};
 
-  return result;
+  // shift vector from [0,1] to [-1,1]
+  return ((result/255. * 2.0) - Vector3f{1,1,1}).normalize();
 }
 
 //--------------------------------------------------------------------
