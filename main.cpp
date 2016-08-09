@@ -26,10 +26,12 @@
 
 // C++
 #include <array>
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <string>
+#include <thread>
 
 using namespace Images;
 using namespace GL_Impl;
@@ -40,66 +42,95 @@ Matrix4f ViewPort;
 Matrix4f Projection;
 Vector3f Light;
 
+constexpr auto PI   = 3.14159265358979323846;
+constexpr auto PI_2 = 1.57079632679489661923;
+constexpr auto PI_4 = 0.78539816339744830962;
+
 std::vector<std::shared_ptr<Mesh>> loadMeshes()
 {
   std::vector<std::shared_ptr<Mesh>> meshes;
 
   // AFRICAN HEAD
-//  auto diffuseTex = TGA::read("obj/african_head/african_head_diffuse.tga");
-//  assert(diffuseTex);
-//  diffuseTex->flipVertically();
-//
-//  auto normalMapTex = TGA::read("obj/african_head/african_head_nm.tga");
-//  assert(normalMapTex);
-//  normalMapTex->flipVertically();
-//
-//  auto specular = TGA::read("obj/african_head/african_head_spec.tga");
-//  assert(specular);
-//  specular->flipVertically();
-//
-//  auto tangent = TGA::read("obj/african_head/african_head_nm_tangent.tga");
-//  assert(tangent);
-//  tangent->flipVertically();
-//
-//  auto mesh = Mesh::read_Wavefront("obj/african_head/african_head.obj");
-//  assert(mesh);
-//  mesh->setDiffuseTexture(diffuseTex);
-//  mesh->setNormalMap(normalMapTex);
-//  mesh->setSpecular(specular);
-//  mesh->setTangent(tangent);
-//
-//  meshes.push_back(mesh);
-
-  // DIABLO 3
-  auto diffuseTex = TGA::read("obj/diablo3_pose/diablo3_pose_diffuse.tga");
+  auto diffuseTex = TGA::read("obj/african_head/african_head_diffuse.tga");
   assert(diffuseTex);
   diffuseTex->flipVertically();
 
-  auto normalMapTex = TGA::read("obj/diablo3_pose/diablo3_pose_nm.tga");
+  auto normalMapTex = TGA::read("obj/african_head/african_head_nm.tga");
   assert(normalMapTex);
   normalMapTex->flipVertically();
 
-  auto specular = TGA::read("obj/diablo3_pose/diablo3_pose_spec.tga");
+  auto specular = TGA::read("obj/african_head/african_head_spec.tga");
   assert(specular);
   specular->flipVertically();
 
-  auto tangent = TGA::read("obj/diablo3_pose/diablo3_pose_nm_tangent.tga");
+  auto tangent = TGA::read("obj/african_head/african_head_nm_tangent.tga");
   assert(tangent);
   tangent->flipVertically();
 
-  auto glow = TGA::read("obj/diablo3_pose/diablo3_pose_glow.tga");
-  assert(glow);
-  glow->flipVertically();
-
-  auto mesh = Mesh::read_Wavefront("obj/diablo3_pose/diablo3_pose.obj");
+  auto mesh = Mesh::read_Wavefront("obj/african_head/african_head.obj");
   assert(mesh);
   mesh->setDiffuseTexture(diffuseTex);
   mesh->setNormalMap(normalMapTex);
   mesh->setSpecular(specular);
   mesh->setTangent(tangent);
-  mesh->setGlowTexture(glow);
 
   meshes.push_back(mesh);
+
+  diffuseTex = TGA::read("obj/african_head/african_head_eye_inner_diffuse.tga");
+  assert(diffuseTex);
+  diffuseTex->flipVertically();
+
+  normalMapTex = TGA::read("obj/african_head/african_head_eye_inner_nm.tga");
+  assert(normalMapTex);
+  normalMapTex->flipVertically();
+
+  specular = TGA::read("obj/african_head/african_head_eye_inner_spec.tga");
+  assert(specular);
+  specular->flipVertically();
+
+  tangent = TGA::read("obj/african_head/african_head_eye_inner_nm_tangent.tga");
+  assert(tangent);
+  tangent->flipVertically();
+
+  mesh = Mesh::read_Wavefront("obj/african_head/african_head_eye_inner.obj");
+  assert(mesh);
+  mesh->setDiffuseTexture(diffuseTex);
+  mesh->setNormalMap(normalMapTex);
+  mesh->setSpecular(specular);
+  mesh->setTangent(tangent);
+
+  meshes.push_back(mesh);
+
+  // DIABLO 3
+//  auto diffuseTex = TGA::read("obj/diablo3_pose/diablo3_pose_diffuse.tga");
+//  assert(diffuseTex);
+//  diffuseTex->flipVertically();
+//
+//  auto normalMapTex = TGA::read("obj/diablo3_pose/diablo3_pose_nm.tga");
+//  assert(normalMapTex);
+//  normalMapTex->flipVertically();
+//
+//  auto specular = TGA::read("obj/diablo3_pose/diablo3_pose_spec.tga");
+//  assert(specular);
+//  specular->flipVertically();
+//
+//  auto tangent = TGA::read("obj/diablo3_pose/diablo3_pose_nm_tangent.tga");
+//  assert(tangent);
+//  tangent->flipVertically();
+//
+//  auto glow = TGA::read("obj/diablo3_pose/diablo3_pose_glow.tga");
+//  assert(glow);
+//  glow->flipVertically();
+//
+//  auto mesh = Mesh::read_Wavefront("obj/diablo3_pose/diablo3_pose.obj");
+//  assert(mesh);
+//  mesh->setDiffuseTexture(diffuseTex);
+//  mesh->setNormalMap(normalMapTex);
+//  mesh->setSpecular(specular);
+//  mesh->setTangent(tangent);
+//  mesh->setGlowTexture(glow);
+//
+//  meshes.push_back(mesh);
 
   // FLOOR
 //  diffuseTex = TGA::read("obj/floor_diffuse.tga");
@@ -123,36 +154,94 @@ std::vector<std::shared_ptr<Mesh>> loadMeshes()
 //--------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-  short int width = 1000;
+  auto threadsNum  = std::thread::hardware_concurrency()-1;
+  short int width  = 1000;
   short int height = 1000;
-  Vector3f eye   {1,1,40};
+  Vector3f eye   {5,1,10};
   Vector3f center{0,0,0};
   Vector3f up    {0,1,0};
 
-  auto lightVector = Vector3f{-5.,3.,5.}.normalize();
-  Light = lightVector.normalize();
+  std::cout << "Using " << threadsNum << " threads." << std::endl << std::flush;
+
+  auto lightVector = Vector3f{5.,12.,14.};
+  Light = lightVector;
   viewport(width/8, height/8, width*3/4, height*3/4);
+  projection(-1.f/(eye-center).norm());
+  lookAt(eye, center, up);
 
   auto image   = std::make_shared<TGA>(width, height, Image::RGB);
   auto zBuffer = std::make_shared<Utils::zBuffer>(width, height);
-  auto dBuffer = std::make_shared<Utils::zBuffer>(width, height);
 
-  BlockTimer timer("Draw");
+  BlockTimer timer("Render");
 
   auto meshes = loadMeshes();
 
-  // depth pass
+  // z-buffer generation pass
+  for(auto current: meshes)
+  {
+    #pragma omp parallel for schedule(dynamic,1) num_threads(threadsNum)
+    for (unsigned long i = 0; i < current->faces_num(); i++)
+    {
+      EmptyShader shader;
+      shader.uniform_mesh = current;
+
+      Vector3f screen_coords[3];
+      for (int j = 0; j < 3; j++)
+      {
+        screen_coords[j] = shader.vertex(i, j);
+      }
+
+      triangle(screen_coords, shader, *zBuffer, *image);
+    }
+  }
+
+  zBuffer->write("1-zBufferPass");
+
+  // Screen space ambient occlusion pass
+  auto ambientImage = std::make_shared<TGA>(width, height, Image::GRAYSCALE);
+  auto zPtr = zBuffer->getBuffer(); // only reads, we can bypass mutex to execute faster.
+  for(auto current: meshes)
+  {
+    #pragma omp parallel for schedule(dynamic,1) num_threads(threadsNum)
+    for (int x = 0; x < width; x++)
+    {
+      for (int y = 0; y < height; y++)
+      {
+        if (zPtr[y*zBuffer->getWidth() + x] == -std::numeric_limits<float>::max()) continue;
+
+        float total = 0;
+        float angle = 0;
+        for (int i = 0; i < 8; ++i, angle += PI_4)
+        {
+          total += PI_2 - max_elevation_angle(*zBuffer, Vector2f{x,y}, Vector2f{std::cos(angle), std::sin(angle)});
+        }
+        total /= (PI_2) * 8;
+
+        const int value = std::min(255., std::max(0., total/(1/255.)));
+        ambientImage->set(x, y, Images::Color(value, value, value));
+      }
+    }
+  }
+
+  ambientImage->flipVertically();
+  ambientImage->write("2-ambient");
+//  auto ambientImage = Images::TGA::read("2-ambient.tga");
+  ambientImage->flipVertically();
+  zBuffer->clear();
+
+  auto dBuffer = std::make_shared<Utils::zBuffer>(width, height);
+
+  // light depth pass
   projection(-1.f/lightVector.norm());
   lookAt(lightVector, center, up);
 
   for(auto current: meshes)
   {
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(dynamic,1) num_threads(threadsNum)
     for (unsigned long i = 0; i < current->faces_num(); i++)
     {
-      DepthShader shader;
+      EmptyShader shader;
       shader.uniform_mesh = current;
-      shader.depthBuffer = dBuffer;
 
       Vector3f screen_coords[3];
       for (int j = 0; j < 3; j++)
@@ -164,10 +253,9 @@ int main(int argc, char *argv[])
     }
   }
 
-  dBuffer->write("depthBuffer");
-  image->clear();
+  dBuffer->write("3-depthPass");
 
-  // second pass
+  // final rendering pass
   auto ShadowTransform = ViewPort*Projection*ModelView;
   projection(-1.f/(eye-center).norm());
   lookAt(eye, center, up);
@@ -175,14 +263,16 @@ int main(int argc, char *argv[])
   // int pass = 0;
   for(auto current: meshes)
   {
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(dynamic,1) num_threads(threadsNum)
     for (unsigned long i = 0; i < current->faces_num(); i++)
     {
-      HardShadowsShader shader;
+      FinalShader shader;
       shader.uniform_transform_S = ShadowTransform;
-      shader.depthBuffer = dBuffer;
+      shader.uniform_ambient_image = ambientImage;
+      shader.uniform_depthBuffer = dBuffer;
       shader.uniform_mesh = current;
       shader.uniform_glow_coeff = 2.5;
+      shader.uniform_ambient_coeff = 0.05;
 
       Vector3f screen_coords[3];
       for (int j = 0; j < 3; j++)
@@ -200,13 +290,7 @@ int main(int argc, char *argv[])
   }
 
   image->flipVertically(); // i want to have the origin at the left bottom corner of the image
-  image->write("output");
-
-  // dump zBuffer
-  // zBuffer->write("zbuffer");
-
-  // dump decomposition of the texture in triangles
-  // dumpTexture(diffuseTex, mesh, "texture");
+  image->write("4-output");
 
 	return 0;
 }

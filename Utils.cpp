@@ -25,6 +25,7 @@
 
 // C++
 #include <iostream>
+#include <algorithm>
 
 using namespace Images;
 using namespace GL_Impl;
@@ -56,7 +57,19 @@ Utils::zBuffer::zBuffer(const short width, const short height)
 
   m_data = new float[width*height];
 
-  std::fill_n(m_data, width*height, -std::numeric_limits<float>::max());
+  clear();
+}
+
+//--------------------------------------------------------------------
+Utils::zBuffer::zBuffer(const zBuffer& buffer)
+: m_width{buffer.m_width}
+, m_height{buffer.m_height}
+, m_min{buffer.m_min}
+, m_max{buffer.m_max}
+{
+  m_data = new float[m_width*m_height];
+
+  std::copy_n(buffer.m_data, m_width*m_height, m_data);
 }
 
 //--------------------------------------------------------------------
@@ -183,4 +196,10 @@ bool Utils::dumpTexture(std::shared_ptr<Mesh> mesh, const std::string &filename)
 
   texture->flipVertically();
   return texture->write(filename);
+}
+
+//--------------------------------------------------------------------
+void Utils::zBuffer::clear()
+{
+  std::fill_n(m_data, m_width*m_height, -std::numeric_limits<float>::max());
 }

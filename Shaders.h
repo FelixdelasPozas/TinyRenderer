@@ -34,7 +34,7 @@ struct MultiShader
 {
     virtual Vector3f vertex(int iface, int nthvert);
 
-    virtual bool fragment(Vector3f bar, Images::Color &color);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
     Vector3f              varying_intensity; // written by vertex shader, read by fragment shader
     const Matrix4f        uniform_transform = ViewPort*Projection*ModelView;
@@ -67,7 +67,7 @@ struct GouraudShader
 {
     virtual Vector3f vertex(int iface, int nthvert);
 
-    virtual bool fragment(Vector3f bar, Images::Color &color);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
     Vector3f              varying_intensity; // written by vertex shader, read by fragment shader
     const Matrix4f        uniform_transform = ViewPort*Projection*ModelView;
@@ -81,7 +81,7 @@ struct GouraudShader
 struct CellShader
 : public GouraudShader
 {
-    virtual bool fragment(Vector3f bar, Images::Color &color) override;
+    virtual bool fragment(Vector3f baricentric, Images::Color &color) override;
 
     int           varying_shades    = 5;                          // default number of varying_shades
     Images::Color varying_baseColor = Images::Color(255,255,255); // default color
@@ -96,27 +96,39 @@ struct TexturedGouraudShader
 {
     virtual Vector3f vertex(int iface, int nthvert);
 
-    virtual bool fragment(Vector3f bar, Images::Color &color);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
     Vector3i varying_uv_index; // uv_indexes
 };
 
+/** \struct NormalMapping
+ * \brief Implements normal mapping with normal textures.
+ *
+ */
 struct NormalMapping
 : public TexturedGouraudShader
 {
-    virtual bool fragment(Vector3f bar, Images::Color &color);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
 };
 
+/** \struct TexturedNormalMapping
+ * \brief Implements textured normal mapping with normal textures.
+ *
+ */
 struct TexturedNormalMapping
 : public TexturedGouraudShader
 {
-    virtual bool fragment(Vector3f bar, Images::Color &color);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
 };
 
+/** \struct TexturedSpecularMapping
+ * \brief Adds specular mapping computation to previous shader.
+ *
+ */
 struct TexturedSpecularShader
 : public TexturedNormalMapping
 {
-    virtual bool fragment(Vector3f bar, Images::Color &color);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
     int   uniform_ambient_value  = 120;
     int   uniform_ambient_coeff  = 0.2;
@@ -124,62 +136,105 @@ struct TexturedSpecularShader
     float uniform_diffuse_coeff  = 0.5;
 };
 
+/** \struct PhongShader
+ * \brief Implements phong shading.
+ *
+ */
 struct PhongShader
 : public GouraudShader
 {
     virtual Vector3f vertex(int iface, int nthvert);
 
-    virtual bool fragment(Vector3f bar, Images::Color &color);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
     Vector3i varying_uv_index; // uv_indexes
     Vector3i varying_normals;  // normals indexes.
 };
 
+/** \struct DarbousNormalShader
+ * \brief Implements normal mapping using tangent space textures.
+ *
+ */
 struct DarbouxNormalShader
 : public GL_Impl::Shader
 {
     virtual Vector3f vertex(int iface, int nthvert);
 
-    virtual bool fragment(Vector3f bar, Images::Color &color);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
     float          uniform_glow_coeff     = 1.0; // glow coefficient.
     float          uniform_specular_coeff = 0.4; // specular coefficient.
     float          uniform_diffuse_coeff  = 0.5; // diffuse coefficient.
     float          uniform_ambient_coeff  = 0.1; // ambient coefficient.
-    float          uniform_ambient_light  = 50.;  // ambient light color addition.
 
     Vector3i       varying_uv_index;       // uv_indexes
     Matrix3f       varying_normals;        // normals indexes.
     Matrix3f       varying_vertex;         // triangle in Projection*Modelview
     const Matrix4f uniform_transform    = ViewPort*Projection*ModelView;
     const Matrix4f uniform_transform_TI = (Projection*ModelView).transpose().inverse();
+    int            varying_ambient_value;
+    std::shared_ptr<Images::Image> uniform_ambient_image;
 };
 
-//--------------------------------------------------------------------
-struct DepthShader
+/** \struct EmptyShader
+ * \brief Computes the transformed coordinates but does nothing else. Used to compute depth buffers.
+ *
+ */
+struct EmptyShader
 : public GL_Impl::Shader
 {
     virtual Vector3f vertex(int iface, int nthvert);
 
-    virtual bool fragment(Vector3f bar, Images::Color &color);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color)
+    { return true; }
 
-    Matrix3f            varying_vertex;
-    Matrix4f            uniform_transform = ViewPort*Projection*ModelView;
-    std::shared_ptr<Utils::zBuffer> depthBuffer;
+    Matrix3f                        varying_vertex;
+    Matrix4f                        uniform_transform = ViewPort*Projection*ModelView;
+    std::shared_ptr<Utils::zBuffer> uniform_depthBuffer;
 };
 
-//--------------------------------------------------------------------
+/** \struct HardShadowsShader
+ * \brief Adds shadows computation to Darboux shader using a depth buffer computed from the light position.
+ *
+ */
 struct HardShadowsShader
 : public DarbouxNormalShader
 {
     virtual Vector3f vertex(int iface, int nthvert);
 
-    virtual bool fragment(Vector3f bar, Images::Color &color);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
-    Matrix3f            varying_dVertex;
-    Matrix4f            uniform_transform_S;
-    std::shared_ptr<Utils::zBuffer> depthBuffer;
+    Matrix3f                        varying_dVertex;
+    Matrix4f                        uniform_transform_S;
+    std::shared_ptr<Utils::zBuffer> uniform_depthBuffer;
 };
 
+/** \struct FinalShader
+ * \brief Computes the final image using all the shaders developed in the course.
+ *
+ */
+struct FinalShader
+: public GL_Impl::Shader
+{
+    virtual Vector3f vertex(int iface, int nthvert);
+
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
+
+    float          uniform_glow_coeff     = 1.0; // glow coefficient.
+    float          uniform_specular_coeff = 0.4; // specular coefficient.
+    float          uniform_diffuse_coeff  = 0.5; // diffuse coefficient.
+    float          uniform_ambient_coeff  = 0.1; // ambient coefficient.
+
+    Vector3i       varying_uv_index; // uv_indexes
+    Matrix3f       varying_normals;  // normals indexes.
+    Matrix3f       varying_vertex;   // triangle in Projection*Modelview
+    Matrix3f       varying_dVertex;  // triangle in light projection.
+    const Matrix4f uniform_transform    = ViewPort*Projection*ModelView;
+    const Matrix4f uniform_transform_TI = (Projection*ModelView).transpose().inverse();
+    Matrix4f       uniform_transform_S; // matrix of the light depth computation.
+    int            varying_ambient_value;
+    std::shared_ptr<Images::Image>  uniform_ambient_image;
+    std::shared_ptr<Utils::zBuffer> uniform_depthBuffer;
+};
 
 #endif // SHADERS_H_

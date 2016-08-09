@@ -157,7 +157,6 @@ void GL_Impl::triangle(Vector3f *sPts, Shader &shader, zBuffer &buffer, Images::
       if (bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0 || !buffer.checkAndSet(P[0], P[1], P[2])) continue;
 
       Color color;
-
       bool discard = shader.fragment(bc_screen, color);
       if (!discard)
       {
@@ -165,4 +164,30 @@ void GL_Impl::triangle(Vector3f *sPts, Shader &shader, zBuffer &buffer, Images::
       }
     }
   }
+}
+
+//--------------------------------------------------------------------
+float GL_Impl::max_elevation_angle(zBuffer &buffer, Vector2f point, Vector2f direction)
+{
+  float max_angle = 0;
+  for (float t = 0.; t < 1000.; t += 1.)
+  {
+    auto current = point + direction * t;
+    if (current[0] >= buffer.getWidth() || current[1] >= buffer.getHeight() || current[0] < 0 || current[1] < 0)
+    {
+      return max_angle;
+    }
+
+    auto distance = (point - current).norm();
+    if (distance < 1.f) continue;
+
+    auto poscurr  = static_cast<unsigned short>(current[1]) * buffer.getWidth() + static_cast<unsigned short>(current[0]);
+    auto pospoint = static_cast<unsigned short>(  point[1]) * buffer.getWidth() + static_cast<unsigned short>(  point[0]);
+
+    float elevation = buffer.getBuffer()[poscurr]-buffer.getBuffer()[pospoint];
+
+    max_angle = std::max(max_angle, ::atanf(elevation / distance));
+  }
+
+  return max_angle;
 }

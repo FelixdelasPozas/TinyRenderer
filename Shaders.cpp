@@ -271,9 +271,27 @@ bool DarbouxNormalShader::fragment(Vector3f baricentric, Images::Color& color)
     specular = minmax(std::pow(base, exp));
   }
 
+  Matrix3f transformed;
+  for(int i = 0; i < 3; ++i)
+  {
+    transformed[i] = (ViewPort * varying_vertex[i].augment()).project();
+  }
+  auto vertex = transformed.transpose() * baricentric;
+
+  auto x = static_cast<unsigned short>(vertex[0]);
+  auto y = static_cast<unsigned short>(vertex[1]);
+  if(0 <= x && x < uniform_ambient_image->getWidth() && 0 <= y && y < uniform_ambient_image->getHeight())
+  {
+    varying_ambient_value = uniform_ambient_image->get(x,y).raw[0];
+  }
+  else
+  {
+    varying_ambient_value = 50;
+  }
+
   for (int i=0; i < color.bytespp; i++)
   {
-    int value = uniform_ambient_coeff*uniform_ambient_light + static_cast<float>(color.raw[i])*(uniform_diffuse_coeff*diffuse + uniform_specular_coeff*specular);
+    int value = uniform_ambient_coeff*varying_ambient_value + static_cast<float>(color.raw[i])*(uniform_diffuse_coeff*diffuse + uniform_specular_coeff*specular);
     color.raw[i] = std::max(0, std::min(value, 255));
   }
 
@@ -286,26 +304,12 @@ bool DarbouxNormalShader::fragment(Vector3f baricentric, Images::Color& color)
 }
 
 //--------------------------------------------------------------------
-Vector3f DepthShader::vertex(int iface, int nthvert)
+Vector3f EmptyShader::vertex(int iface, int nthvert)
 {
   const auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
   varying_vertex.setColumn(nthvert, (uniform_transform * uniform_mesh->getVertex(vertexId).augment()).project());
 
   return varying_vertex.column(nthvert);
-}
-
-
-//--------------------------------------------------------------------
-bool DepthShader::fragment(Vector3f baricentric, Images::Color& color)
-{
-  auto vertex = varying_vertex * baricentric;
-
-  if(0 <= vertex[0] && vertex[0] < depthBuffer->getWidth()-1 && 0 <= vertex[1] && vertex[1] < depthBuffer->getHeight()-1)
-  {
-    depthBuffer->checkAndSet(vertex[0], vertex[1], vertex[2]);
-  }
-
-  return false;
 }
 
 //--------------------------------------------------------------------
@@ -324,18 +328,112 @@ bool HardShadowsShader::fragment(Vector3f baricentric, Images::Color& color)
 
   auto vertex = varying_dVertex * baricentric;
 
-  if(0 <= vertex[0] && vertex[0] < depthBuffer->getWidth()-1 && 0 <= vertex[1] && vertex[1] < depthBuffer->getHeight()-1)
+  if(0 <= vertex[0] && vertex[0] < uniform_depthBuffer->getWidth()-1 && 0 <= vertex[1] && vertex[1] < uniform_depthBuffer->getHeight()-1)
   {
-    if(depthBuffer->get(vertex[0], vertex[1]) > vertex[2]+43.34)
+    if(uniform_depthBuffer->get(vertex[0], vertex[1]) > vertex[2]+43.34)
     {
       // multiply the non-ambient part of the color.
-      auto ambient = uniform_ambient_coeff * uniform_ambient_light;
+      auto ambient = uniform_ambient_coeff * varying_ambient_value;
       for(int i = 0; i < color.bytespp; ++i)
       {
         color.raw[i] = std::min(255.f, ((color.raw[i]-ambient)*0.3f)+ambient);
       }
     }
   }
+
+  return false;
+}
+
+//--------------------------------------------------------------------
+Vector3f FinalShader::vertex(int iface, int nthvert)
+{
+  const auto vertexId = uniform_mesh->getFaceVertices(iface)[nthvert];
+  const auto normalId = uniform_mesh->getFaceNormals(iface)[nthvert];
+  const auto vertex   = uniform_mesh->getVertex(vertexId).augment();
+
+  varying_uv_index[nthvert] = uniform_mesh->getuvIds(iface)[nthvert];
+  varying_normals[nthvert]  = (uniform_transform_TI * uniform_mesh->getNormal(normalId).augment()).project();
+  varying_vertex[nthvert]   = ((Projection*ModelView) * vertex).project();
+  varying_dVertex[nthvert]  = (uniform_transform_S * vertex).project();
+
+  return (ViewPort * varying_vertex[nthvert].augment()).project();
+}
+
+//--------------------------------------------------------------------
+bool FinalShader::fragment(Vector3f baricentric, Images::Color& color)
+{
+  const auto nb = (varying_normals[0] * baricentric[0] + varying_normals[1] * baricentric[1] + varying_normals[2] * baricentric[2]).normalize();
+
+  auto uv0 = uniform_mesh->getuv(varying_uv_index[0]);
+  auto uv1 = uniform_mesh->getuv(varying_uv_index[1]);
+  auto uv2 = uniform_mesh->getuv(varying_uv_index[2]);
+
+  const auto uv = uv0 * baricentric[0] + uv1 * baricentric[1] + uv2 * baricentric[2]; // final uv coordinates
+
+  Matrix3f A;
+  A[0] = varying_vertex[1] - varying_vertex[0];
+  A[1] = varying_vertex[2] - varying_vertex[0];
+  A[2] = nb;
+
+  auto AI = A.inverse();
+
+  auto i = AI * Vector3f{uv1[0] - uv0[0], uv2[0] - uv0[0], 0.f};
+  auto j = AI * Vector3f{uv1[1] - uv0[1], uv2[1] - uv0[1], 0.f};
+
+  Matrix3f B;
+  B.setColumn(0, i.normalize());
+  B.setColumn(1, j.normalize());
+  B.setColumn(2, nb);
+
+  const auto l       = (uniform_transform * Light.augment(0)).project(false).normalize();
+  const auto n       = (uniform_transform_TI * (B * uniform_mesh->getTangent(uv)).augment(0)).project(false).normalize();
+  const auto diffuse = minmax(n*l);
+  color              = uniform_mesh->getDiffuse(uv);
+  auto specular      = 0.f;
+
+  if(diffuse != 0 && uniform_mesh->hasSpecular())
+  {
+    const auto exp       = uniform_mesh->getSpecular(uv); // why this +5 fixes specular in diablo?? computations seems right.
+    const auto reflected = (n*(n*l*2.f) - l).normalize();
+    const auto base      = std::max(reflected[2], 0.f);
+    specular = minmax(std::pow(base, exp));
+  }
+
+  auto vertex = varying_vertex.transpose() * baricentric;
+  auto x = static_cast<unsigned short>(vertex[0]);
+  auto y = static_cast<unsigned short>(vertex[1]);
+  if(0 <= x && x < uniform_ambient_image->getWidth() && 0 <= y && y < uniform_ambient_image->getHeight())
+  {
+    varying_ambient_value = uniform_ambient_image->get(x,y).raw[0];
+  }
+  else
+  {
+    varying_ambient_value = 50;
+  }
+
+  vertex = varying_dVertex.transpose() * baricentric;
+  x = static_cast<unsigned short>(vertex[0]);
+  y = static_cast<unsigned short>(vertex[1]);
+
+  float shadow_coeff = 1.0;
+  if(0 <= x && x < uniform_depthBuffer->getWidth() && 0 <= y && y < uniform_depthBuffer->getHeight() && uniform_depthBuffer->get(x,y) > vertex[2]+43.34)
+  {
+    shadow_coeff = 0.6;
+  }
+
+  for (int i = 0; i < color.bytespp; i++)
+  {
+    int value = shadow_coeff * (uniform_ambient_coeff*varying_ambient_value + static_cast<float>(color.raw[i])*(uniform_diffuse_coeff*diffuse + uniform_specular_coeff*specular));
+    color.raw[i] = std::max(0, std::min(value, 255));
+  }
+
+  if(uniform_mesh->hasGlow())
+  {
+    color += uniform_mesh->getGlow(uv) * uniform_glow_coeff;
+  }
+
+  // ramp up the color a bit.
+  color = color * 1.5;
 
   return false;
 }

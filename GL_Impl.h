@@ -84,11 +84,19 @@ namespace GL_Impl
   /** \brief Draws a given triangle in the given color on the given image.
    * \param[in] sPts pointer to 2d triangle points.
    * \param[in] shader vertex & fragment shader.
-   * \param[inout] buffer z-buffer vector.
+   * \param[inout] buffer zBuffer object.
    * \param[inout] image TGA image raw pointer.
    *
    */
   void triangle(Vector3f *sPts, Shader &shader, Utils::zBuffer &buffer, Images::Image &image);
+
+  /** \brief Computes the slope of the given pixel p in the direction dir with the information of the z-buffer.
+   * \param[in] buffer zBuffer object.
+   * \param[in] point point coordinates.
+   * \param[in] direction 2D direction.
+   *
+   */
+  float max_elevation_angle(Utils::zBuffer &buffer, Vector2f point, Vector2f direction);
 
 } // namespace GL_Impl
 

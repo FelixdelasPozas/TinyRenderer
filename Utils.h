@@ -45,6 +45,12 @@ namespace Utils
        */
       zBuffer(const short width, const short height);
 
+      /** \brief zBuffer class copy constructor.
+       * \param[in] buffer zBuffer object reference.
+       *
+       */
+      zBuffer(const zBuffer &buffer);
+
       /** \brief zBuffer class destructor.
        *
        */
@@ -98,6 +104,17 @@ namespace Utils
        *
        */
       void write(const std::string& filename);
+
+      /** \brief Clears the buffer.
+       *
+       */
+      void clear();
+
+      /** \brief Returns the data buffer pointer. Used to access data without mutex.
+       *
+       */
+      const float *getBuffer() const
+      { return m_data; }
 
     private:
       short      m_width;  /** buffer width.         */
