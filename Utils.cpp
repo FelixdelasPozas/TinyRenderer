@@ -177,7 +177,7 @@ bool Utils::dumpTexture(std::shared_ptr<Mesh> mesh, const std::string &filename)
   #pragma omp parallel for
   for (unsigned long i = 0; i < mesh->faces_num(); i++)
   {
-    auto uvs  = mesh->getuvIds(i);
+    auto uvs  = mesh->getFaceUVIds(i);
     Vector2f uv_coords[3];
 
     for (int j: {0,1,2})

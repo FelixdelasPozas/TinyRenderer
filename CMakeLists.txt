@@ -9,7 +9,7 @@ set (SOFTWARE_RENDERER_VERSION_PATCH 0)
 
 # Find includes in corresponding build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_CXX_FLAGS " -Wall -Wno-deprecated -std=c++11 -mwindows -mno-ms-bitfields -fopenmp")
+set(CMAKE_CXX_FLAGS " -Wall -Wno-deprecated -std=c++11 -mno-ms-bitfields -fopenmp")
 
 if(DEFINED MINGW)
   configure_file("${PROJECT_SOURCE_DIR}/resources.rc.in" "${PROJECT_BINARY_DIR}/resources.rc")
@@ -40,6 +40,8 @@ set (SOURCES
 set(LIBS
   libgomp.a
   )
+  
+set_source_files_properties(GL_Impl.cpp PROPERTIES COMPILE_FLAGS "-march=corei7-avx -mavx")  
 
 add_executable(renderer ${SOURCES})
 target_link_libraries (renderer ${LIBS})

@@ -20,11 +20,15 @@
 #ifndef IMAGES_H_
 #define IMAGES_H_
 
+// Project
+#include <Algebra.h>
+
 // C++
 #include <cassert>
 #include <iosfwd>
 #include <iostream>
 #include <memory>
+#include <unordered_map>
 
 namespace Images
 {
@@ -124,7 +128,7 @@ namespace Images
     {
       for(int i= 0; i < bytespp; ++i)
       {
-        raw[i] = std::min(255.f, std::max(0.f, static_cast<float>(raw[i] * c)));
+        raw[i] = std::min(255.f, std::max(0.f, static_cast<float>(raw[i]) * c));
       }
 
       return *this;
@@ -141,7 +145,7 @@ namespace Images
 
       for(int i= 0; i < bytespp; ++i)
       {
-        result.raw[i] = std::min(255.f, std::max(0.f, static_cast<float>(raw[i] * c)));
+        result.raw[i] = std::min(255.f, std::max(0.f, static_cast<float>(raw[i]) * c));
       }
 
       return result;
@@ -191,6 +195,47 @@ namespace Images
       }
 
       return result;
+    }
+
+    /** \brief Additive operation +
+     * \param[in] c numerical value to add to each color component.
+     *
+     */
+    template<class T> Color operator+(const T &c)
+    {
+      auto value = static_cast<unsigned char>(c);
+      auto result = Color{value, value, value, value};
+
+      return *this + result;
+    }
+
+    /** \brief Subtract operation -
+     * \param[in] color color to subtract.
+     *
+     *
+     */
+    Color operator-(const Color &color)
+    {
+      auto result = color.to(bytespp);
+
+      for(int i = 0; i < result.bytespp; ++i)
+      {
+        result.raw[i] = std::max(0, raw[i] - color.raw[i]);
+      }
+
+      return result;
+    }
+
+    /** \brief Subtract operation -
+     * \param[in] c numerical value to add to each color component.
+     *
+     */
+    template<class T> Color operator-(const T &c)
+    {
+      auto value = static_cast<unsigned char>(c);
+      auto result = Color{value, value, value, value};
+
+      return *this - result;
     }
 
     /** \brief Converts the color to a new bytes per pixel format.
@@ -318,9 +363,9 @@ namespace Images
       virtual void clear() = 0;
 
     protected:
-      short int m_width;  /** image width.     */
-      short int m_height; /** image height.    */
-      Format    m_bpp;    /** bytes per pixel. */
+      short int                                 m_width;      /** image width.      */
+      short int                                 m_height;     /** image height.     */
+      Format                                    m_bpp;        /** bytes per pixel.  */
   };
 
   /** \class TGA
@@ -434,7 +479,7 @@ namespace Images
       bool unloadRLEdata(std::ofstream &out);
 
     private:
-      unsigned char *m_data;   /** data buffer. */
+      unsigned char *m_data; /** data buffer.      */
   };
 
 } // namespace Images

@@ -25,6 +25,34 @@
 #include <Algebra.h>
 #include <Utils.h>
 
+/** \struct GouraudShader
+ * \brief Implements Gouraud shading without textures
+ *
+ */
+struct GouraudShader
+: public GL_Impl::Shader
+{
+    virtual Vector3f vertex(int iface, int nthvert);
+    virtual bool fragment(Vector3f baricentric, Images::Color &color);
+
+    Vector3f       varying_intensity;
+    const Matrix4f uniform_transform    = ViewPort*Projection*ModelView;
+    const Matrix4f uniform_transform_TI = (Projection*ModelView).transpose().inverse();
+};
+
+/** \struct GouraudShader
+ * \brief Implements Gouraud shading without textures
+ *
+ */
+struct CellShader
+: public GouraudShader
+{
+    virtual bool fragment(Vector3f baricentric, Images::Color &color) override;
+
+    int           varying_shades    = 5;                          // default number of varying_shades
+    Images::Color varying_baseColor = Images::Color(255,255,255); // default color
+};
+
 /** \struct MultiShader
  * \brief Use of multiple shaders for image generation.
  *
@@ -56,35 +84,6 @@ struct MultiShader
 
       uniform_shaders.push_back(shader);
     }
-};
-
-/** \struct GouraudShader
- * \brief Implements Gouraud shading without textures
- *
- */
-struct GouraudShader
-: public GL_Impl::Shader
-{
-    virtual Vector3f vertex(int iface, int nthvert);
-
-    virtual bool fragment(Vector3f baricentric, Images::Color &color);
-
-    Vector3f              varying_intensity; // written by vertex shader, read by fragment shader
-    const Matrix4f        uniform_transform = ViewPort*Projection*ModelView;
-    const Matrix4f        uniform_transform_TI = (Projection*ModelView).transpose().inverse();
-};
-
-/** \struct GouraudShader
- * \brief Implements Gouraud shading without textures
- *
- */
-struct CellShader
-: public GouraudShader
-{
-    virtual bool fragment(Vector3f baricentric, Images::Color &color) override;
-
-    int           varying_shades    = 5;                          // default number of varying_shades
-    Images::Color varying_baseColor = Images::Color(255,255,255); // default color
 };
 
 /** \struct GouraudShader
@@ -188,9 +187,7 @@ struct EmptyShader
     virtual bool fragment(Vector3f baricentric, Images::Color &color)
     { return true; }
 
-    Matrix3f                        varying_vertex;
-    Matrix4f                        uniform_transform = ViewPort*Projection*ModelView;
-    std::shared_ptr<Utils::zBuffer> uniform_depthBuffer;
+    Matrix4f uniform_transform = ViewPort*Projection*ModelView; // transformation matrix.
 };
 
 /** \struct HardShadowsShader
@@ -221,9 +218,10 @@ struct FinalShader
     virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
     float          uniform_glow_coeff     = 1.0; // glow coefficient.
-    float          uniform_specular_coeff = 0.4; // specular coefficient.
-    float          uniform_diffuse_coeff  = 0.5; // diffuse coefficient.
-    float          uniform_ambient_coeff  = 0.1; // ambient coefficient.
+    float          uniform_specular_coeff = 0.3; // specular coefficient.
+    float          uniform_diffuse_coeff  = 0.6; // diffuse coefficient.
+    float          uniform_ambient_coeff  = 0.05; // ambient coefficient.
+    float          uniform_shadow_coeff   = 0.5; // shadow coefficient.
 
     Vector3i       varying_uv_index; // uv_indexes
     Matrix3f       varying_normals;  // normals indexes.
