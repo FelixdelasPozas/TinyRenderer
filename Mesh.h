@@ -29,8 +29,69 @@
 #include <string>
 #include <memory>
 #include <list>
+#include <unordered_map>
+#include <map>
 
 class Mesh;
+
+/** \class Material
+ * \brief Holds material textures and properties.
+ *
+ */
+class Material
+{
+  public:
+    /** texture types. */
+    enum class TYPE: char { DIFFUSE = 0, NORMAL, NORMALTS, SPECULAR, GLOW, SSS };
+
+    /** \brief Adds a texture.
+     * \param[in] filename file path or name to serve as identifier.
+     * \param[in] texture texture image.
+     *
+     */
+    void addTexture(const std::string &filename, const std::shared_ptr<Images::Image> texture);
+
+    /** \brief Associates a material and texture type to a image texture.
+     * \param[in] materialId material identifier.
+     * \param[in] type texture type.
+     * \param[in] textureId texture filename.
+     */
+    void addMaterialTexture(const std::string &materialId, const TYPE type, const std::string &textureId);
+
+    /** \brief Adds a material property.
+     * \param[in] materialId material identifier.
+     * \param[in] key property key.
+     * \param[in] value property value.
+     *
+     */
+    void addProperty(const std::string &materialId, const std::string &key, const Vector3f &value);
+
+    /** \brief Returns a material texture.
+     * \param[in] materialId material identifier.
+     * \param[in] type texture type.
+     *
+     */
+    std::shared_ptr<Images::Image> getTexture(const std::string &materialId, const TYPE type) const;
+
+    /** \brief Returns a material property value.
+     * \param[in] materialId material identifier.
+     * \param[in] key property key.
+     *
+     */
+    const Vector3f getProperty(const std::string &materialId, const std::string &key) const;
+
+    /** \brief Returns true if the given material has a texture of the given type.
+     * \param[in] materialId material identifier.
+     * \param[in] type texture type.
+     *
+     */
+    bool hasTexture(const std::string &materialId, const TYPE type) const;
+
+  private:
+    std::map<std::string, std::shared_ptr<Images::Image>>                      m_textures;   /** texture-filename <-> image map   */
+    std::unordered_map<std::string, std::unordered_map<std::string, Vector3f>> m_properties; /** materialId <-> key-value map.    */
+    std::unordered_map<std::string, std::unordered_map<int, std::string>>      m_materials;  /** materialId <-> type-texture map. */
+};
 
 /** \class Wavefront
  * \brief Implements a simple wavefront obj container.
@@ -65,11 +126,23 @@ class Wavefront
      */
     bool write(const std::string &filename);
 
+    /** \brief Adds a mesh.
+     * \param[in] mesh mesh object.
+     *
+     */
+    void addMesh(std::shared_ptr<Mesh> mesh)
+    { m_meshes.push_back(mesh); }
+
     /** \brief Returns the id of the object.
      *
      */
     const std::string &id() const
     { return m_id; };
+
+    /** \brief Sets the material information for the meshes.
+     *
+     */
+    void setMaterial(std::shared_ptr<Material> material);
 
   private:
     /** \brief WaveFront class constructor.
@@ -80,8 +153,9 @@ class Wavefront
     {};
 
   private:
-    Meshes             m_meshes; /** mesh vector.                     */
-    const std::string &m_id;     /** object id, usually the filename. */
+    std::shared_ptr<Material> m_material; /** meshe's material.                */
+    Meshes                    m_meshes;   /** mesh vector.                     */
+    const std::string        &m_id;       /** object id, usually the filename. */
 };
 
 /** \class Mesh
@@ -115,9 +189,15 @@ class Mesh
     unsigned long vertex_num() const
     { return m_vertices.size(); }
 
+    /** \brief Returns the number of normals of the mesh.
+     *
+     */
     unsigned long normals_num() const
     { return m_normals.size(); }
 
+    /** \brief Returns the number of uv coordinates of the mesh.
+     *
+     */
     unsigned long uv_num() const
     { return m_uv.size(); }
 
@@ -177,20 +257,6 @@ class Mesh
     Vector3f getNormal(unsigned long idx)
     { return m_normals[idx]; }
 
-    /** \brief Sets the diffuse texture of the model.
-     * \param[in] texture texture image object.
-     *
-     */
-    void setDiffuseTexture(std::shared_ptr<Images::Image> texture);
-
-    /** \brief Returns the diffuse texture.
-     *
-     * NOTE: should be const returned but need not to to dump it.
-     *
-     */
-    std::shared_ptr<Images::Image> diffuseTexture() const
-    { return m_diffuse; }
-
     /** \brief Returns the diffuse texture color for the given coordinates.
      * \param[in] u u coordinate.
      * \param[in] v v coordinate.
@@ -204,19 +270,6 @@ class Mesh
      */
     Images::Color getDiffuse(Vector2f uv)
     { return getDiffuse(uv[0], uv[1]); }
-
-    /** \brief Sets the normal map texture of the model.
-     * \param[in] texture texture image object.
-     *
-     */
-    void setNormalMap(std::shared_ptr<Images::Image> texture)
-    { m_normalMap = texture; }
-
-    /** \brief Returns the normal map texture.
-     *
-     */
-    std::shared_ptr<Images::Image> normalMapTexture() const
-    { return m_normalMap; }
 
     /** \brief Returns the normal vector for the given coordinates.
      * \param[in] u u coordinate.
@@ -232,19 +285,6 @@ class Mesh
     Vector3f getNormalMap(Vector2f uv)
     { return getNormalMap(uv[0], uv[1]); }
 
-    /** \brief Sets the specular texture of the model.
-     * \param[in] texture texture image object.
-     *
-     */
-    void setSpecular(std::shared_ptr<Images::Image> texture)
-    { m_specular = texture; }
-
-    /** \brief Returns the specular texture.
-     *
-     */
-    std::shared_ptr<Images::Image> SpecularTexture() const
-    { return m_specular; }
-
     /** \brief Returns the specular value for the given coordinates.
      * \param[in] u u coordinate.
      * \param[in] v v coordinate.
@@ -258,19 +298,6 @@ class Mesh
      */
     float getSpecular(Vector2f uv)
     { return getSpecular(uv[0], uv[1]); }
-
-    /** \brief Sets the Darboux tangent space texture of the model.
-     * \param[in] texture texture image object.
-     *
-     */
-    void setTangent(std::shared_ptr<Images::Image> texture)
-    { m_tangent = texture; }
-
-    /** \brief Returns the Darboux tangent space texture of the model.
-     *
-     */
-    std::shared_ptr<Images::Image> TangentTexture() const
-    { return m_tangent; }
 
     /** \brief Returns the tangent space vector for the given coordinates.
      * \param[in] u u coordinate.
@@ -286,19 +313,6 @@ class Mesh
     Vector3f getTangent(Vector2f uv)
     { return getTangent(uv[0], uv[1]); }
 
-    /** \brief Sets the glow texture of the model.
-     * \param[in] texture texture image object.
-     *
-     */
-    void setGlowTexture(std::shared_ptr<Images::Image> texture)
-    { m_glow = texture; }
-
-    /** \brief Returns the glow texture of the model.
-     *
-     */
-    std::shared_ptr<Images::Image> GlowTexture() const
-    { return m_glow; }
-
     /** \brief Returns the glow color for the given texture coordinates.
      * \param[in] u u coordinate.
      * \param[in] v v coordinate.
@@ -312,19 +326,6 @@ class Mesh
      */
     Images::Color getGlow(Vector2f uv)
     { return getGlow(uv[0], uv[1]); }
-
-    /** \brief Sets the glow texture of the model.
-     * \param[in] texture texture image object.
-     *
-     */
-    void setSSSTexture(std::shared_ptr<Images::Image> texture)
-    { m_sss = texture; }
-
-    /** \brief Returns the glow texture of the model.
-     *
-     */
-    std::shared_ptr<Images::Image> SSSTexture() const
-    { return m_sss; }
 
     /** \brief Returns the glow color for the given texture coordinates.
      * \param[in] u u coordinate.
@@ -344,31 +345,31 @@ class Mesh
      *
      */
     bool hasSpecular() const
-    { return m_specular != nullptr; }
+    { return m_material->hasTexture(m_mtl, Material::TYPE::SPECULAR); }
 
     /** \brief Returns true if the model has Darboux normal texture and false otherwise.
      *
      */
     bool hasTangent() const
-    { return m_tangent != nullptr; }
+    { return m_material->hasTexture(m_mtl, Material::TYPE::NORMALTS); }
 
     /** \brief Returns true if the model has normals texture and false otherwise.
      *
      */
     bool hasNormalMap() const
-    { return m_normalMap != nullptr; }
+    { return m_material->hasTexture(m_mtl, Material::TYPE::NORMAL); }
 
     /** \brief Returns true if the model has glow texture and false otherwise.
      *
      */
     bool hasGlow() const
-    { return m_glow != nullptr; }
+    { return m_material->hasTexture(m_mtl, Material::TYPE::GLOW); }
 
     /** \brief Returns true if the model has subsurface scattering texture.
      *
      */
     bool hasSSS() const
-    { return m_sss != nullptr; }
+    { return m_material->hasTexture(m_mtl, Material::TYPE::SSS); }
 
     /** \brief Sets the id of the associated material.
      * \param[in] mtl material id.
@@ -377,34 +378,23 @@ class Mesh
     void setMaterialId(const std::string &mtl)
     { m_mtl = mtl; }
 
+    /** \brief Sets the material object.
+     * \param[in] material
+     */
+    void setMaterial(std::shared_ptr<Material> material)
+    { m_material = material; }
+
     /** brief Returns the material id.
      *
      */
     const std::string &materialId() const
     { return m_mtl; }
 
-    /** \brief Sets a property.
-     * \param[in] key identifier.
-     * \parma[in] value vector.
+    /** \brief Returns the material of the mesh.
      *
      */
-    void setProperty(const std::string &key, const Vector3f &value)
-    { m_properties.insert({key, value}); }
-
-    /** \brief Returns true if the properties has the given key.
-     * \param[in] key identifier.
-     *
-     */
-    bool hasProperty(const std::string &key)
-    { return m_properties.find(key) != m_properties.end(); };
-
-    /** \brief Returns the value of the given key property.
-     * \param[in] key identifier.
-     *
-     */
-    const Vector3f property(const std::string &key)
-    { auto it = m_properties.find(key); if(it != m_properties.end()) return (*it).second; return Vector3f(); }
-
+    std::shared_ptr<Material> material() const
+    { return m_material; }
 
   private:
     struct Face
@@ -461,21 +451,13 @@ class Mesh
      */
     void addNormal(const Vector3f &n);
 
-    const std::string     m_id;       /** mesh id                          */
-    std::vector<Vector3f> m_vertices; /** mesh vertex vector.              */
-    std::vector<Face>     m_faces;    /** mesh faces vector.               */
-    std::vector<Vector2f> m_uv;       /** texture coordinates of vertices. */
-    std::vector<Vector3f> m_normals;  /** face normals.                    */
-    std::string           m_mtl;      /** material id.                     */
-
-    std::shared_ptr<Images::Image> m_diffuse;   /** mesh diffuse texture.         */
-    std::shared_ptr<Images::Image> m_normalMap; /** normalMap texture.            */
-    std::shared_ptr<Images::Image> m_specular;  /** specular texture.             */
-    std::shared_ptr<Images::Image> m_tangent;   /** tangent-space normal map.     */
-    std::shared_ptr<Images::Image> m_glow;      /** glow texture.                 */
-    std::shared_ptr<Images::Image> m_sss;       /** subsuface scattering texture. */
-
-    std::unordered_map<std::string, Vector3f> m_properties; /** image properties. */
+    const std::string         m_id;       /** mesh id                          */
+    std::vector<Vector3f>     m_vertices; /** mesh vertex vector.              */
+    std::vector<Face>         m_faces;    /** mesh faces vector.               */
+    std::vector<Vector2f>     m_uv;       /** texture coordinates of vertices. */
+    std::vector<Vector3f>     m_normals;  /** face normals.                    */
+    std::string               m_mtl;      /** material id.                     */
+    std::shared_ptr<Material> m_material; /** mesh material object.            */
 
     friend std::shared_ptr<Wavefront> Wavefront::read(const std::string &);
     friend bool Wavefront::write(const std::string &);

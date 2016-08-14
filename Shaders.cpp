@@ -373,26 +373,33 @@ bool FinalShader::fragment(Vector3f baricentric, Images::Color& color)
 
   if(uv[0] > 1 || uv[0] < 0 || uv[1] > 1 || uv[1] < 0) return true;
 
-  Matrix3f A;
-  A[0] = varying_vertex[1] - varying_vertex[0];
-  A[1] = varying_vertex[2] - varying_vertex[0];
-  A[2] = nb;
+  const auto l = (uniform_transform * Light.augment(0)).project(false).normalize();
+  auto n = nb;
+  color = uniform_mesh->getDiffuse(uv);
+  float diffuse = 1.0;
+  float specular = 0.0;
 
-  auto AI = A.inverse();
+  if(uniform_mesh->hasTangent())
+  {
+    Matrix3f A;
+    A[0] = varying_vertex[1] - varying_vertex[0];
+    A[1] = varying_vertex[2] - varying_vertex[0];
+    A[2] = nb;
 
-  auto i = AI * Vector3f{uv1[0] - uv0[0], uv2[0] - uv0[0], 0.f};
-  auto j = AI * Vector3f{uv1[1] - uv0[1], uv2[1] - uv0[1], 0.f};
+    auto AI = A.inverse();
 
-  Matrix3f B;
-  B.setColumn(0, i.normalize());
-  B.setColumn(1, j.normalize());
-  B.setColumn(2, nb);
+    auto i = AI * Vector3f{uv1[0] - uv0[0], uv2[0] - uv0[0], 0.f};
+    auto j = AI * Vector3f{uv1[1] - uv0[1], uv2[1] - uv0[1], 0.f};
 
-  const auto l       = (uniform_transform * Light.augment(0)).project(false).normalize();
-  const auto n       = (uniform_transform_TI * (B * uniform_mesh->getTangent(uv)).augment(0)).project(false).normalize();
-  const auto diffuse = minmax01(n*l);
-  auto specular      = 0.f;
-  color              = uniform_mesh->getDiffuse(uv);
+    Matrix3f B;
+    B.setColumn(0, i.normalize());
+    B.setColumn(1, j.normalize());
+    B.setColumn(2, nb);
+
+    n = (uniform_transform_TI * (B * uniform_mesh->getTangent(uv)).augment(0)).project(false).normalize();
+  }
+
+  diffuse = minmax01(n*l);
 
   if(color.bytespp == 4 && color.a == 0) return true;
 

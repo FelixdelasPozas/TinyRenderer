@@ -33,12 +33,8 @@ using namespace Images;
 
 //--------------------------------------------------------------------
 Mesh::Mesh(const std::string &id)
-: m_id       {id}
-, m_diffuse  {nullptr}
-, m_normalMap{nullptr}
-, m_specular {nullptr}
-, m_tangent  {nullptr}
-, m_glow     {nullptr}
+: m_id      {id}
+, m_material{nullptr}
 {
 }
 
@@ -85,21 +81,17 @@ void Mesh::addNormal(const Vector3f &n)
 }
 
 //--------------------------------------------------------------------
-void Mesh::setDiffuseTexture(std::shared_ptr<Images::Image> texture)
-{
-  m_diffuse = texture;
-}
-
-//--------------------------------------------------------------------
 Images::Color Mesh::getDiffuse(const float u, const float v)
 {
-  return m_diffuse->get(u*(m_diffuse->getWidth()-1), v*(m_diffuse->getHeight()-1));
+  auto texture = m_material->getTexture(m_mtl, Material::TYPE::DIFFUSE);
+  return texture->get(u*(texture->getWidth()-1), v*(texture->getHeight()-1));
 }
 
 //--------------------------------------------------------------------
 Vector3f Mesh::getNormalMap(const float u, const float v)
 {
-  auto texColor = m_normalMap->get(u*(m_normalMap->getWidth()-1), v*(m_normalMap->getHeight()-1));
+  auto texture = m_material->getTexture(m_mtl, Material::TYPE::NORMAL);
+  auto texColor = texture->get(u*(texture->getWidth()-1), v*(texture->getHeight()-1));
   Vector4f vector{texColor.r, texColor.g, texColor.b, texColor.a};
 
   return vector.project().normalize();
@@ -108,7 +100,8 @@ Vector3f Mesh::getNormalMap(const float u, const float v)
 //--------------------------------------------------------------------
 float Mesh::getSpecular(const float u, const float v)
 {
-  auto color = m_specular->get(u*(m_specular->getWidth()-1), v*(m_specular->getHeight()-1));
+  auto texture = m_material->getTexture(m_mtl, Material::TYPE::SPECULAR);
+  auto color = texture->get(u*(texture->getWidth()-1), v*(texture->getHeight()-1));
 
   return color.raw[0]/1.f;
 }
@@ -116,7 +109,8 @@ float Mesh::getSpecular(const float u, const float v)
 //--------------------------------------------------------------------
 Vector3f Mesh::getTangent(const float u, const float v)
 {
-  auto color = m_tangent->get(u*(m_tangent->getWidth()-1), v*(m_tangent->getHeight()-1));
+  auto texture = m_material->getTexture(m_mtl, Material::TYPE::NORMALTS);
+  auto color = texture->get(u*(texture->getWidth()-1), v*(texture->getHeight()-1));
   assert(color.bytespp >= 3);
 
   Vector3f result{color.raw[2], color.raw[1], color.raw[0]};
@@ -128,31 +122,34 @@ Vector3f Mesh::getTangent(const float u, const float v)
 //--------------------------------------------------------------------
 Images::Color Mesh::getGlow(const float u, const float v)
 {
-  return m_glow->get(u*(m_glow->getWidth()-1), v*(m_glow->getHeight()-1));
+  auto texture = m_material->getTexture(m_mtl, Material::TYPE::GLOW);
+  return texture->get(u*(texture->getWidth()-1), v*(texture->getHeight()-1));
 }
 
 //--------------------------------------------------------------------
 Images::Color Mesh::getSSS(const float u, const float v)
 {
-  return m_sss->get(u*(m_sss->getWidth()-1), v*(m_sss->getHeight()-1));
+  auto texture = m_material->getTexture(m_mtl, Material::TYPE::SSS);
+  return texture->get(u*(texture->getWidth()-1), v*(texture->getHeight()-1));
 }
 
 //--------------------------------------------------------------------
-void parseMaterials(Wavefront::Meshes meshes, const std::string &mtl)
+std::shared_ptr<Material> parseMaterials(const std::string &filename)
 {
-  std::cout << "parse materials in " << mtl << std::endl;
+  auto material = std::make_shared<Material>();
+
+  std::cout << "parse materials in " << filename << std::endl;
 
   std::string path;
-  auto pos = mtl.find_last_of('/');
+  auto pos = filename.find_last_of('/');
   if(pos != std::string::npos)
   {
-    path = mtl.substr(0, pos+1);
+    path = filename.substr(0, pos+1);
   }
 
   std::ifstream in;
-  in.open(mtl.c_str(), std::ifstream::in);
-  std::unordered_map<std::string, std::unordered_map<std::string, Vector3f>> materials;
-  std::string material;
+  in.open(filename.c_str(), std::ifstream::in);
+  std::string materialId;
   if (!in.fail())
   {
     std::string line;
@@ -163,9 +160,7 @@ void parseMaterials(Wavefront::Meshes meshes, const std::string &mtl)
 
       if (!line.compare(0, 7, "newmtl "))
       {
-        material = line.substr(7, line.length()-7);
-
-        materials.insert({material, std::unordered_map<std::string, Vector3f>{}});
+        materialId = line.substr(7, line.length()-7);
         continue;
       }
 
@@ -181,55 +176,58 @@ void parseMaterials(Wavefront::Meshes meshes, const std::string &mtl)
           iss >> value[i];
         }
 
-        for(auto mesh: meshes)
-        {
-          if(mesh->materialId() == material)
-          {
-            mesh->setProperty(key, value);
-          }
-        }
-
+        material->addProperty(materialId, key, value);
         continue;
       }
 
-      if(!line.compare(0,7, "map_Ks "))
+      if(!line.compare(0,7, "map_Ks ") || !line.compare(0,7, "map_kS "))
       {
-        for(auto mesh: meshes)
+        auto texture = line.substr(7, line.length()-7);
+        if(texture.length() > 0)
         {
-          if(mesh->materialId() == material)
-          {
-            auto texture = Images::TGA::read(path + line.substr(7, line.length()-7));
-            texture->flipVertically();
-            mesh->setSpecular(texture);
-          }
+          auto filename = path + texture;
+
+          material->addTexture(filename, Images::TGA::read(filename));
+          material->addMaterialTexture(materialId, Material::TYPE::SPECULAR, filename);
         }
         continue;
       }
 
-      if(!line.compare(0,7, "map_Kd "))
+      if(!line.compare(0,7, "map_Kd ") || !line.compare(0,7, "map_kD "))
       {
-        for(auto mesh: meshes)
+        auto texture = line.substr(7, line.length()-7);
+        if(texture.length() > 0)
         {
-          if(mesh->materialId() == material)
-          {
-            auto texture = Images::TGA::read(path + line.substr(7, line.length()-7));
-            texture->flipVertically();
-            mesh->setDiffuseTexture(texture);
-          }
+          auto filename = path + texture;
+
+          material->addTexture(filename, Images::TGA::read(filename));
+          material->addMaterialTexture(materialId, Material::TYPE::DIFFUSE, filename);
         }
         continue;
       }
 
       if(!line.compare(0,9, "map_Bump "))
       {
-        for(auto mesh: meshes)
+        auto texture = line.substr(9, line.length()-9);
+        if(texture.length() > 0)
         {
-          if(mesh->materialId() == material)
-          {
-            auto texture = Images::TGA::read(path + line.substr(9, line.length()-9));
-            texture->flipVertically();
-            mesh->setTangent(texture);
-          }
+          auto filename = path + texture;
+
+          material->addTexture(filename, Images::TGA::read(filename));
+          material->addMaterialTexture(materialId, Material::TYPE::NORMALTS, filename);
+        }
+        continue;
+      }
+
+      if(!line.compare(0,5, "bump "))
+      {
+        auto texture = line.substr(5, line.length()-5);
+        if(texture.length() > 0)
+        {
+          auto filename = path + texture;
+
+          material->addTexture(filename, Images::TGA::read(filename));
+          material->addMaterialTexture(materialId, Material::TYPE::NORMALTS, filename);
         }
         continue;
       }
@@ -237,9 +235,11 @@ void parseMaterials(Wavefront::Meshes meshes, const std::string &mtl)
   }
   else
   {
-    std::cout << "Couldn't read material file: " << mtl << std::endl;
+    std::cout << "Couldn't read material file: " << filename << std::endl;
   }
   std::cout << std::flush;
+
+  return material;
 }
 
 //--------------------------------------------------------------------
@@ -370,7 +370,6 @@ std::shared_ptr<Wavefront> Wavefront::read(const std::string& filename)
   std::cout << "processed: " << filename << std::endl;
   if(object->m_meshes.size() != 0)
   {
-    // TODO read materials, use mtllib or extrapolate name.
     if(mtllib != std::string())
     {
       auto pos = filename.find_last_of('/');
@@ -379,7 +378,9 @@ std::shared_ptr<Wavefront> Wavefront::read(const std::string& filename)
         mtllib = filename.substr(0, pos+1) + mtllib;
       }
 
-      parseMaterials(object->m_meshes, mtllib);
+      auto material = parseMaterials(mtllib);
+
+      object->setMaterial(material);
     }
     else
     {
@@ -390,7 +391,7 @@ std::shared_ptr<Wavefront> Wavefront::read(const std::string& filename)
     std::cout << "meshes: " << object->m_meshes.size() << std::endl;
     for(auto mesh: object->m_meshes)
     {
-      std::cout << "mesh id: " << mesh->id() << " material " << mesh->materialId() << " - " << (mesh->hasSpecular() ? "S" : "") << (mesh->hasNormalMap() ? "N" : "") << (mesh->hasTangent() ? "T" : "");
+      std::cout << "mesh id: " << mesh->id() << " material: " << mesh->materialId() << " textures: " << (mesh->hasSpecular() ? "S" : "") << (mesh->hasNormalMap() ? "N" : "") << (mesh->hasTangent() ? "T" : "");
       std::cout << " vertices: " << mesh->m_vertices.size() << " faces: " << mesh->m_faces.size();
       std::cout << " uv: " << mesh->m_uv.size() << " normals: " << mesh->m_normals.size() << std::endl;
     }
@@ -470,4 +471,69 @@ bool Wavefront::write(const std::string &filename)
   out.close();
 
   return true;
+}
+
+//--------------------------------------------------------------------
+void Wavefront::setMaterial(std::shared_ptr<Material> material)
+{
+  m_material = material;
+
+  for(auto mesh: m_meshes)
+  {
+    mesh->setMaterial(material);
+  }
+}
+
+//--------------------------------------------------------------------
+void Material::addTexture(const std::string &filename, const std::shared_ptr<Images::Image> texture)
+{
+  texture->flipVertically();
+  m_textures[filename] = texture;
+}
+
+//--------------------------------------------------------------------
+void Material::addProperty(const std::string& materialId, const std::string& key, const Vector3f& value)
+{
+  m_properties[materialId][key] = value;
+}
+
+void Material::addMaterialTexture(const std::string &materialId, const TYPE type, const std::string &textureId)
+{
+  m_materials[materialId][static_cast<int>(type)] = textureId;
+}
+
+//--------------------------------------------------------------------
+std::shared_ptr<Images::Image> Material::getTexture(const std::string& id, const TYPE type) const
+{
+  assert(m_materials.find(id) != m_materials.end());
+
+  auto map = m_materials.at(id);
+
+  assert(map.find(static_cast<int>(type)) != map.end());
+
+  return m_textures.at(map.at(static_cast<int>(type)));
+}
+
+//--------------------------------------------------------------------
+const Vector3f Material::getProperty(const std::string& id, const std::string& key) const
+{
+  assert(m_properties.find(id) != m_properties.end());
+
+  auto map = m_properties.at(id);
+
+  assert(map.find(key) != map.end());
+
+  return map.at(key);
+}
+
+//--------------------------------------------------------------------
+bool Material::hasTexture(const std::string &materialId, const TYPE type) const
+{
+  auto it = m_materials.find(materialId);
+
+  if(it == m_materials.end()) return false;
+
+  auto map = (*it).second;
+
+  return (map.find(static_cast<int>(type)) != map.end());
 }

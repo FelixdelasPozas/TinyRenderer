@@ -169,7 +169,7 @@ void Utils::zBuffer::write(const std::string& filename)
 //--------------------------------------------------------------------
 bool Utils::dumpTexture(std::shared_ptr<Mesh> mesh, const std::string &filename)
 {
-  auto texture = mesh->diffuseTexture();
+  auto texture = mesh->material()->getTexture(mesh->materialId(), Material::TYPE::DIFFUSE);
   auto width   = texture->getWidth();
   auto height  = texture->getHeight();
   auto white   = Color(255,255,255);

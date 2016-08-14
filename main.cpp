@@ -50,7 +50,7 @@ std::vector<std::shared_ptr<Mesh>> loadMeshes()
 {
   std::vector<std::shared_ptr<Mesh>> meshes;
 
-  auto obj = Wavefront::read("obj/TF2-Engineer/engineer.obj");
+  auto obj = Wavefront::read("obj/TF2-Scout/Scout.obj");
   assert(obj);
   for(auto mesh: obj->meshes())
   {
@@ -172,9 +172,9 @@ std::vector<std::shared_ptr<Mesh>> loadMeshes()
 //--------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-  auto threadsNum  = std::thread::hardware_concurrency()-1;
-  short int width  = 1000;
-  short int height = 1000;
+  auto threadsNum  = std::thread::hardware_concurrency()-4;
+  short int width  = 2000;
+  short int height = 2000;
   Vector3f eye   {5,5,10};
   Vector3f center{0.,2.5,0.};
   Vector3f up    {0,1,0};
@@ -219,35 +219,32 @@ int main(int argc, char *argv[])
 
   // Screen space ambient occlusion pass
   std::cout << "start ambient pass" << std::endl << std::flush;
-//  auto ambientImage = std::make_shared<TGA>(width, height, Image::GRAYSCALE);
-//  auto zPtr = zBuffer->getBuffer(); // only reads, we can bypass mutex to execute faster.
-//  for(auto current: meshes)
-//  {
-//    std::cout << "process " << current->id() << std::endl << std::flush;
-//    #pragma omp parallel for schedule(dynamic,1) num_threads(threadsNum)
-//    for (int x = 0; x < width; x++)
-//    {
-//      for (int y = 0; y < height; y++)
-//      {
-//        if (zPtr[y*zBuffer->getWidth() + x] == -std::numeric_limits<float>::max()) continue;
-//
-//        float total = 0;
-//        float angle = 0;
-//        for (int i = 0; i < 8; ++i, angle += PI_4)
-//        {
-//          total += PI_2 - max_elevation_angle(*zBuffer, Vector2f{x,y}, Vector2f{std::cos(angle), std::sin(angle)});
-//        }
-//        total /= (PI_2) * 8;
-//
-//        const int value = std::min(255., std::max(0., total/(1/255.)));
-//        ambientImage->set(x, y, Images::Color(value, value, value));
-//      }
-//    }
-//  }
-//
-//  ambientImage->flipVertically();
-//  ambientImage->write("2-ambient");
-  auto ambientImage = Images::TGA::read("2-ambient.tga");
+  auto ambientImage = std::make_shared<TGA>(width, height, Image::GRAYSCALE);
+  auto zPtr = zBuffer->getBuffer(); // only reads, we can bypass mutex to execute faster.
+
+  #pragma omp parallel for schedule(dynamic,1) num_threads(threadsNum)
+  for (int x = 0; x < width; x++)
+  {
+    for (int y = 0; y < height; y++)
+    {
+      if (zPtr[y * zBuffer->getWidth() + x] == -std::numeric_limits<float>::max()) continue;
+
+      float total = 0;
+      float angle = 0;
+      for (int i = 0; i < 8; ++i, angle += PI_4)
+      {
+        total += PI_2 - max_elevation_angle(*zBuffer, Vector2f{x,y}, Vector2f{std::cos(angle), std::sin(angle)});
+      }
+      total /= (PI_2) * 8;
+
+      const int value = std::min(255., std::max(0., total / (1 / 255.)));
+      ambientImage->set(x, y, Images::Color(value, value, value));
+    }
+  }
+
+  ambientImage->flipVertically();
+  ambientImage->write("2-ambient");
+//  auto ambientImage = Images::TGA::read("2-ambient.tga");
   ambientImage->flipVertically();
   zBuffer->clear();
 
