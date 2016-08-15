@@ -186,97 +186,118 @@ float GL_Impl::max_elevation_angle(zBuffer &buffer, Vector2f point, Vector2f dir
   float max_angle = 0;
   float t = 0;
 
-  const auto ptr       = buffer.getBuffer();
-  const __m256 max     = _mm256_set1_ps(1000);
-  const __m256 distmax = _mm256_set1_ps(1);
-  const __m256 width   = _mm256_set1_ps(buffer.getWidth());
-  const __m256 height  = _mm256_set1_ps(buffer.getHeight());
-
-  bool finished = false;
-
-  while(!finished)
+  if(static_cast<bool>(__builtin_cpu_supports("avx")))
   {
-    __m256 vt = _mm256_set_ps(t, t+1, t+2, t+3, t+4, t+5, t+6, t+7);
-    vt = _mm256_min_ps(max, vt);
+    const auto ptr       = buffer.getBuffer();
+    const __m256 max     = _mm256_set1_ps(1000);
+    const __m256 distmax = _mm256_set1_ps(1);
+    const __m256 width   = _mm256_set1_ps(buffer.getWidth());
+    const __m256 height  = _mm256_set1_ps(buffer.getHeight());
 
-    __m256 valid = _mm256_set1_ps(0xffff);
-    __m256 px = _mm256_set1_ps(point[0]);
-    __m256 py = _mm256_set1_ps(point[1]);
-    __m256 cx = _mm256_set1_ps(direction[0]);
-    __m256 cy = _mm256_set1_ps(direction[1]);
+    bool finished = false;
 
-    cx = _mm256_mul_ps(cx, vt);
-    cy = _mm256_mul_ps(cy, vt);
-    cx = _mm256_add_ps(px, cx);
-    cy = _mm256_add_ps(py, cy);
-
-    auto compx = _mm256_cmp_ps(cx, width, _CMP_GE_OS);
-    auto compy = _mm256_cmp_ps(cy, height, _CMP_GE_OS);
-
-    for(int i = 0; i < 8; ++i)
+    while(!finished)
     {
-      if(compx[i] != 0) { valid[i] = 0x0; finished = true; }
-      if(compy[i] != 0) { valid[i] = 0x0; finished = true; }
+      __m256 vt = _mm256_set_ps(t, t+1, t+2, t+3, t+4, t+5, t+6, t+7);
+      vt = _mm256_min_ps(max, vt);
+
+      __m256 valid = _mm256_set1_ps(0xffff);
+      __m256 px = _mm256_set1_ps(point[0]);
+      __m256 py = _mm256_set1_ps(point[1]);
+      __m256 cx = _mm256_set1_ps(direction[0]);
+      __m256 cy = _mm256_set1_ps(direction[1]);
+
+      cx = _mm256_mul_ps(cx, vt);
+      cy = _mm256_mul_ps(cy, vt);
+      cx = _mm256_add_ps(px, cx);
+      cy = _mm256_add_ps(py, cy);
+
+      auto compx = _mm256_cmp_ps(cx, width, _CMP_GE_OS);
+      auto compy = _mm256_cmp_ps(cy, height, _CMP_GE_OS);
+
+      for(int i = 0; i < 8; ++i)
+      {
+        if(compx[i] != 0) { valid[i] = 0x0; finished = true; }
+        if(compy[i] != 0) { valid[i] = 0x0; finished = true; }
+      }
+
+      compx = _mm256_cmp_ps(cx, _mm256_setzero_ps(), _CMP_LT_OS);
+      compy = _mm256_cmp_ps(cy, _mm256_setzero_ps(), _CMP_LT_OS);
+
+      for(int i = 0; i < 8; ++i)
+      {
+        if(compx[i] != 0) { valid[i] = 0x0; finished = true; }
+        if(compy[i] != 0) { valid[i] = 0x0; finished = true; }
+      }
+
+      auto distx = _mm256_sub_ps(px, cx);
+      auto disty = _mm256_sub_ps(py, cy);
+
+      distx = _mm256_mul_ps(distx, distx);
+      disty = _mm256_mul_ps(disty, disty);
+      disty = _mm256_add_ps(distx, disty);
+      distx = _mm256_sqrt_ps(disty);
+
+      compx = _mm256_cmp_ps(distx, distmax, _CMP_GE_OS);
+
+      for(int i = 0; i < 8; ++i)
+      {
+        if(!valid[i]) continue;
+        if(compx[i] == 0) { valid[i] = 0x0; }
+      }
+
+      cx = _mm256_floor_ps(cx);
+      cy = _mm256_floor_ps(cy);
+
+      auto ip = _mm256_mul_ps(py, width);
+      ip = _mm256_add_ps(px, ip);
+
+      auto ic = _mm256_mul_ps(cy, width);
+      ic = _mm256_add_ps(cx, ic);
+
+      for(int i = 0; i < 8; ++i)
+      {
+        if(valid[i] == 0) ic[i] = 0;
+      }
+
+      px = _mm256_set1_ps(ptr[static_cast<long>(ip[0])]);
+
+      cx = _mm256_set_ps(ptr[static_cast<long>(ic[7])],ptr[static_cast<long>(ic[6])],ptr[static_cast<long>(ic[5])],ptr[static_cast<long>(ic[4])],
+                         ptr[static_cast<long>(ic[3])],ptr[static_cast<long>(ic[2])],ptr[static_cast<long>(ic[1])],ptr[static_cast<long>(ic[0])]);
+
+      cx = _mm256_sub_ps(cx, px);
+
+      cx = _mm256_div_ps(cx, distx);
+
+      for(int i = 0; i < 8; ++i)
+      {
+
+        if(valid[i] == 0x0) continue;
+
+        max_angle = std::max(max_angle, ::atanf(cx[i]));
+      }
+
+      t += 8;
+      if(t >= 1000) break;
     }
-
-    compx = _mm256_cmp_ps(cx, _mm256_setzero_ps(), _CMP_LT_OS);
-    compy = _mm256_cmp_ps(cy, _mm256_setzero_ps(), _CMP_LT_OS);
-
-    for(int i = 0; i < 8; ++i)
+  }
+  else
+  {
+    for (t = 0.; t < 1000.; t += 1.)
     {
-      if(compx[i] != 0) { valid[i] = 0x0; finished = true; }
-      if(compy[i] != 0) { valid[i] = 0x0; finished = true; }
+      auto current = point + direction * t;
+      if (current[0] >= buffer.getWidth() || current[1] >= buffer.getHeight() || current[0] < 0 || current[1] < 0) break;
+
+      auto distance = (point - current).norm();
+      if (distance < 1.f) continue;
+
+      auto poscurr = static_cast<unsigned short>(current[1]) * buffer.getWidth() + static_cast<unsigned short>(current[0]);
+      auto pospoint = static_cast<unsigned short>(point[1]) * buffer.getWidth() + static_cast<unsigned short>(point[0]);
+
+      float elevation = buffer.getBuffer()[poscurr] - buffer.getBuffer()[pospoint];
+
+      max_angle = std::max(max_angle, ::atanf(elevation / distance));
     }
-
-    auto distx = _mm256_sub_ps(px, cx);
-    auto disty = _mm256_sub_ps(py, cy);
-
-    distx = _mm256_mul_ps(distx, distx);
-    disty = _mm256_mul_ps(disty, disty);
-    disty = _mm256_add_ps(distx, disty);
-    distx = _mm256_sqrt_ps(disty);
-
-    compx = _mm256_cmp_ps(distx, distmax, _CMP_GE_OS);
-
-    for(int i = 0; i < 8; ++i)
-    {
-      if(!valid[i]) continue;
-      if(compx[i] == 0) { valid[i] = 0x0; }
-    }
-
-    cx = _mm256_floor_ps(cx);
-    cy = _mm256_floor_ps(cy);
-
-    auto ip = _mm256_mul_ps(py, width);
-    ip = _mm256_add_ps(px, ip);
-
-    auto ic = _mm256_mul_ps(cy, width);
-    ic = _mm256_add_ps(cx, ic);
-
-    for(int i = 0; i < 8; ++i)
-    {
-      if(valid[i] == 0) ic[i] = 0;
-    }
-
-    px = _mm256_set1_ps(ptr[static_cast<long>(ip[0])]);
-
-    cx = _mm256_set_ps(ptr[static_cast<long>(ic[7])],ptr[static_cast<long>(ic[6])],ptr[static_cast<long>(ic[5])],ptr[static_cast<long>(ic[4])],
-                       ptr[static_cast<long>(ic[3])],ptr[static_cast<long>(ic[2])],ptr[static_cast<long>(ic[1])],ptr[static_cast<long>(ic[0])]);
-
-    cx = _mm256_sub_ps(cx, px);
-
-    cx = _mm256_div_ps(cx, distx);
-
-    for(int i = 0; i < 8; ++i)
-    {
-
-      if(valid[i] == 0x0) continue;
-
-      max_angle = std::max(max_angle, ::atanf(cx[i]));
-    }
-
-    t += 8;
-    if(t >= 1000) break;
   }
 
   return max_angle;

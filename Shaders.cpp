@@ -445,7 +445,7 @@ bool FinalShader::fragment(Vector3f baricentric, Images::Color& color)
   }
 
   // ramp up the color a bit.
-  color = color * 1.7;
+  color = color * 2;
 
   return false;
 }

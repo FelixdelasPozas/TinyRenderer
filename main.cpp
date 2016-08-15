@@ -49,7 +49,7 @@ constexpr auto PI_4 = 0.78539816339744830962;
 //--------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
-  auto threadsNum  = std::thread::hardware_concurrency()-4;
+  auto threadsNum  = std::thread::hardware_concurrency();
   short int width  = 1000;
   short int height = 1000;
   Vector3f eye   {5,5,10};
@@ -95,7 +95,8 @@ int main(int argc, char *argv[])
   zBuffer->write("1-zBufferPass");
 
   // Screen space ambient occlusion pass
-  std::cout << "===== ambient occlusion pass =====" << std::endl << std::flush;
+  std::cout << "===== ambient occlusion pass =====" << std::endl;
+  std::cout << "using " << (static_cast<bool>(__builtin_cpu_supports("avx")) ? "avx" : "standard") << " method." << std::endl << std::flush;
   auto ambientImage = std::make_shared<TGA>(width, height, Image::GRAYSCALE);
   auto zPtr = zBuffer->getBuffer(); // only reads, we can bypass mutex to execute faster.
 
