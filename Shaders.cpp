@@ -27,7 +27,7 @@ using namespace Images;
 auto minmax01 = [](float value) { return std::min(1.f, std::max(0.f, value)); };
 
 //--------------------------------------------------------------------
-Vector3f GouraudShader::vertex(int iface, int nthvert)
+Vector4f GouraudShader::vertex(int iface, int nthvert)
 {
   const auto vId = uniform_mesh->getFaceVertexIds(iface)[nthvert];
   const auto nId = uniform_mesh->getFaceNormals(iface)[nthvert];
@@ -37,7 +37,7 @@ Vector3f GouraudShader::vertex(int iface, int nthvert)
   varying_intensity[nthvert] = minmax01(n*l);
   const auto v = uniform_mesh->getVertex(vId).augment();
 
-  return (uniform_transform * v).project();
+  return (uniform_transform * v);
 }
 
 //--------------------------------------------------------------------
@@ -63,7 +63,7 @@ bool CellShader::fragment(Vector3f baricentric, Images::Color &color)
 }
 
 //--------------------------------------------------------------------
-Vector3f TexturedGouraudShader::vertex(int iface, int nthvert)
+Vector4f TexturedGouraudShader::vertex(int iface, int nthvert)
 {
   varying_uv_index[nthvert] = uniform_mesh->getFaceUVIds(iface)[nthvert];
 
@@ -123,18 +123,18 @@ bool TexturedNormalMapping::fragment(Vector3f baricentric, Images::Color& color)
 }
 
 //--------------------------------------------------------------------
-Vector3f MultiShader::vertex(int iface, int nthvert)
+Vector4f MultiShader::vertex(int iface, int nthvert)
 {
   if(varying_vertexi == 3) varying_vertexi = 0;
 
   const auto vertexId = uniform_mesh->getFaceVertexIds(iface)[nthvert];
   const auto vertex = uniform_mesh->getVertex(vertexId).augment();
 
-  varying_svertex[varying_vertexi++] = (uniform_transform*vertex).project();
+  varying_svertex[varying_vertexi] = (uniform_transform*vertex);
 
   for(auto shader: uniform_shaders) shader->vertex(iface, nthvert);
 
-  return varying_svertex[varying_vertexi - 1];
+  return varying_svertex[varying_vertexi++];
 }
 
 //--------------------------------------------------------------------
@@ -145,8 +145,8 @@ bool MultiShader::fragment(Vector3f baricentric, Images::Color& color)
   Vector2f xy;
   for(int i = 0; i < 3; ++i)
   {
-    xy[0] += varying_svertex[i][0] * baricentric[i];
-    xy[1] += varying_svertex[i][1] * baricentric[i];
+    xy[0] += varying_svertex[i].project()[0] * baricentric[i];
+    xy[1] += varying_svertex[i].project()[1] * baricentric[i];
   }
 
   xy = xy / uniform_interval;
@@ -194,14 +194,14 @@ bool TexturedSpecularShader::fragment(Vector3f baricentric, Images::Color& color
 }
 
 //--------------------------------------------------------------------
-Vector3f PhongShader::vertex(int iface, int nthvert)
+Vector4f PhongShader::vertex(int iface, int nthvert)
 {
   const auto vertexId = uniform_mesh->getFaceVertexIds(iface)[nthvert];
   varying_uv_index[nthvert] = uniform_mesh->getFaceUVIds(iface)[nthvert];
   varying_normals[nthvert]  = uniform_mesh->getFaceNormals(iface)[nthvert];
   const auto vertex = uniform_mesh->getVertex(vertexId).augment();
 
-  return (uniform_transform*vertex).project();
+  return (uniform_transform*vertex);
 }
 
 //--------------------------------------------------------------------
@@ -224,14 +224,14 @@ bool PhongShader::fragment(Vector3f baricentric, Images::Color& color)
 }
 
 //--------------------------------------------------------------------
-Vector3f DarbouxNormalShader::vertex(int iface, int nthvert)
+Vector4f DarbouxNormalShader::vertex(int iface, int nthvert)
 {
   const auto vertexId = uniform_mesh->getFaceVertexIds(iface)[nthvert];
   const auto normalId = uniform_mesh->getFaceNormals(iface)[nthvert];
 
   varying_uv_index[nthvert] = uniform_mesh->getFaceUVIds(iface)[nthvert];
   varying_normals.setColumn(nthvert, (uniform_transform_TI * uniform_mesh->getNormal(normalId).augment(0)).project(false));
-  varying_vertex[nthvert] = (uniform_transform * uniform_mesh->getVertex(vertexId).augment()).project();
+  varying_vertex[nthvert] = (uniform_transform * uniform_mesh->getVertex(vertexId).augment());
 
   return varying_vertex[nthvert];
 }
@@ -248,8 +248,8 @@ bool DarbouxNormalShader::fragment(Vector3f baricentric, Images::Color& color)
   auto uv = (uv0 * baricentric[0]) + (uv1 * baricentric[1]) + (uv2 * baricentric[2]);
 
   Matrix3f A;
-  A[0] = varying_vertex[1] - varying_vertex[0];
-  A[1] = varying_vertex[2] - varying_vertex[0];
+  A[0] = varying_vertex[1].project() - varying_vertex[0].project();
+  A[1] = varying_vertex[2].project() - varying_vertex[0].project();
   A[2] = nb;
 
   auto AI = A.inverse();
@@ -281,7 +281,7 @@ bool DarbouxNormalShader::fragment(Vector3f baricentric, Images::Color& color)
   Matrix3f transformed;
   for(int i = 0; i < 3; ++i)
   {
-    transformed[i] = (ViewPort * varying_vertex[i].augment()).project();
+    transformed[i] = (ViewPort * varying_vertex[i]).project();
   }
   auto vertex = transformed.transpose() * baricentric;
 
@@ -309,15 +309,15 @@ bool DarbouxNormalShader::fragment(Vector3f baricentric, Images::Color& color)
 }
 
 //--------------------------------------------------------------------
-Vector3f EmptyShader::vertex(int iface, int nthvert)
+Vector4f EmptyShader::vertex(int iface, int nthvert)
 {
   const auto vertexId = uniform_mesh->getFaceVertexId(iface, nthvert);
 
-  return (uniform_transform * uniform_mesh->getVertex(vertexId).augment()).project();
+  return (uniform_transform * uniform_mesh->getVertex(vertexId).augment());
 }
 
 //--------------------------------------------------------------------
-Vector3f HardShadowsShader::vertex(int iface, int nthvert)
+Vector4f HardShadowsShader::vertex(int iface, int nthvert)
 {
   const auto vertexId = uniform_mesh->getFaceVertexIds(iface)[nthvert];
   varying_dVertex.setColumn(nthvert, (uniform_transform_S * uniform_mesh->getVertex(vertexId).augment()).project());
@@ -346,14 +346,14 @@ bool HardShadowsShader::fragment(Vector3f baricentric, Images::Color& color)
 }
 
 //--------------------------------------------------------------------
-Vector3f FinalShader::vertex(int iface, int nthvert)
+Vector4f FinalShader::vertex(int iface, int nthvert)
 {
   const auto vertexId = uniform_mesh->getFaceVertexIds(iface)[nthvert];
   const auto normalId = uniform_mesh->getFaceNormals(iface)[nthvert];
   const auto vertex   = uniform_mesh->getVertex(vertexId).augment();
 
   varying_uv_index[nthvert] = uniform_mesh->getFaceUVIds(iface)[nthvert];
-  varying_vertex[nthvert]   = (uniform_transform * vertex).project();
+  varying_vertex[nthvert]   = (uniform_transform * vertex);
   varying_normals.setColumn(nthvert, (uniform_transform_TI * uniform_mesh->getNormal(normalId).augment(0)).project(false));
   varying_dVertex.setColumn(nthvert, (uniform_transform_S * vertex).project());
 
@@ -382,8 +382,8 @@ bool FinalShader::fragment(Vector3f baricentric, Images::Color& color)
   if(uniform_mesh->hasTangent())
   {
     Matrix3f A;
-    A[0] = varying_vertex[1] - varying_vertex[0];
-    A[1] = varying_vertex[2] - varying_vertex[0];
+    A[0] = varying_vertex[1].project() - varying_vertex[0].project();
+    A[1] = varying_vertex[2].project() - varying_vertex[0].project();
     A[2] = nb;
 
     auto AI = A.inverse();
@@ -411,7 +411,9 @@ bool FinalShader::fragment(Vector3f baricentric, Images::Color& color)
     specular = minmax01(std::pow(base, exp));
   }
 
-  auto vertex = (varying_vertex.transpose() * baricentric);
+  Matrix3f vm;
+  for(int i = 0; i < 3; ++i) vm.setColumn(i, varying_vertex[i].project());
+  auto vertex = (vm * baricentric);
   auto x = static_cast<unsigned short>(vertex[0]);
   auto y = static_cast<unsigned short>(vertex[1]);
   if(0 <= x && x < uniform_ambient_image->getWidth() && 0 <= y && y < uniform_ambient_image->getHeight())

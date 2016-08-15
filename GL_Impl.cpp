@@ -104,7 +104,7 @@ void GL_Impl::line(int x0, int y0, int x1, int y1, Image &image, const Color &co
 }
 
 //--------------------------------------------------------------------
-Vector3f barycentric(Vector3f *pts, const Vector3f &P)
+Vector3f barycentric(Vector2f *pts, const Vector3f &P)
 {
   Vector3f s[2];
 
@@ -127,8 +127,18 @@ Vector3f barycentric(Vector3f *pts, const Vector3f &P)
 }
 
 //--------------------------------------------------------------------
-void GL_Impl::triangle(Vector3f *sPts, Shader &shader, zBuffer &buffer, Images::Image &image)
+void GL_Impl::triangle(Vector4f *sPts, Shader &shader, zBuffer &buffer, Images::Image &image)
 {
+  Matrix<float,3,4> points;
+  Vector2f pts[3];
+  for(int i = 0; i < 3; ++i)
+  {
+    points[i] = ViewPort*sPts[i];
+    auto point = points[i].project();
+    pts[i][0] = point[0];
+    pts[i][1] = point[1];
+  }
+
   const auto width  = image.getWidth();
   const auto height = image.getHeight();
 
@@ -140,8 +150,8 @@ void GL_Impl::triangle(Vector3f *sPts, Shader &shader, zBuffer &buffer, Images::
   {
     for (int j: {0,1})
     {
-      min[j] = std::max(0, std::min(min[j], static_cast<int>(sPts[i][j])));
-      max[j] = std::min(clamp[j], std::max(max[j], static_cast<int>(sPts[i][j])));
+      min[j] = std::max(0, std::min(min[j], static_cast<int>(pts[i][j])));
+      max[j] = std::min(clamp[j], std::max(max[j], static_cast<int>(pts[i][j])));
     }
   }
 
@@ -151,14 +161,17 @@ void GL_Impl::triangle(Vector3f *sPts, Shader &shader, zBuffer &buffer, Images::
   {
     for (P[1] = min[1]; P[1] <= max[1]; ++P[1])
     {
-      auto bc_screen = barycentric(sPts, P);
+      auto bc_screen = barycentric(pts, P);
+      auto bc_clip   = Vector3f{bc_screen[0]/points[0][3], bc_screen[1]/points[1][3], bc_screen[2]/points[2][3]};
+      bc_clip = bc_clip / (bc_clip[0]+bc_clip[1]+bc_clip[2]);
+
       if(bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0) continue;
 
-      P[2] = sPts[0][2]*bc_screen[0] + sPts[1][2]*bc_screen[1] + sPts[2][2]*bc_screen[2];
+      P[2] = sPts[0][2]*bc_clip[0] + sPts[1][2]*bc_clip[1] + sPts[2][2]*bc_clip[2];
       if (!buffer.checkAndSet(P[0], P[1], P[2])) continue;
 
       Color color;
-      bool discard = shader.fragment(bc_screen, color);
+      bool discard = shader.fragment(bc_clip, color);
       if (!discard)
       {
         image.set(P[0], P[1], color);

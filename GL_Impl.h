@@ -41,7 +41,7 @@ namespace GL_Impl
   struct Shader
   {
       virtual ~Shader() {};
-      virtual Vector3f vertex(int iface, int nthvert) = 0;
+      virtual Vector4f vertex(int iface, int nthvert) = 0;
       virtual bool fragment(Vector3f bar, Images::Color &color) = 0;
 
       std::shared_ptr<Mesh> uniform_mesh;
@@ -82,13 +82,13 @@ namespace GL_Impl
   void line(int x0, int y0, int x1, int y1, Images::Image &image, const Images::Color &color);
 
   /** \brief Draws a given triangle in the given color on the given image.
-   * \param[in] sPts pointer to 2d triangle points.
+   * \param[in] sPts pointer to augmented triangle points.
    * \param[in] shader vertex & fragment shader.
    * \param[inout] buffer zBuffer object.
    * \param[inout] image TGA image raw pointer.
    *
    */
-  void triangle(Vector3f *sPts, Shader &shader, Utils::zBuffer &buffer, Images::Image &image);
+  void triangle(Vector4f *sPts, Shader &shader, Utils::zBuffer &buffer, Images::Image &image);
 
   /** \brief Computes the slope of the given pixel p in the direction dir with the information of the z-buffer.
    * \param[in] buffer zBuffer object.

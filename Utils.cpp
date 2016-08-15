@@ -278,6 +278,29 @@ std::shared_ptr<Wavefront> Utils::africanHead()
     object->addMesh(mesh);
   }
 
+  materialId = "floor";
+
+  id = "obj/floor_diffuse.tga";
+  diffuseTex = TGA::read(id);
+  assert(diffuseTex);
+  material->addTexture(id, diffuseTex);
+  material->addMaterialTexture(materialId, Material::TYPE::DIFFUSE, id);
+
+  id = "obj/floor_nm_tangent.tga";
+  tangent = TGA::read(id);
+  assert(tangent);
+  material->addTexture(id, tangent);
+  material->addMaterialTexture(materialId, Material::TYPE::NORMALTS, id);
+
+  temp = Wavefront::read("obj/floor.obj");
+  assert(temp);
+  for (auto mesh : temp->meshes())
+  {
+    mesh->setMaterialId(materialId);
+    object->addMesh(mesh);
+  }
+
+
   object->setMaterial(material);
 
   return object;

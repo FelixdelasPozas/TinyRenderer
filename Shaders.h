@@ -32,11 +32,11 @@
 struct GouraudShader
 : public GL_Impl::Shader
 {
-    virtual Vector3f vertex(int iface, int nthvert);
+    virtual Vector4f vertex(int iface, int nthvert);
     virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
     Vector3f       varying_intensity;
-    const Matrix4f uniform_transform    = ViewPort*Projection*ModelView;
+    const Matrix4f uniform_transform    = Projection*ModelView;
     const Matrix4f uniform_transform_TI = (Projection*ModelView).transpose().inverse();
 };
 
@@ -60,17 +60,17 @@ struct CellShader
 struct MultiShader
 : public GL_Impl::Shader
 {
-    virtual Vector3f vertex(int iface, int nthvert);
+    virtual Vector4f vertex(int iface, int nthvert);
 
     virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
     Vector3f              varying_intensity; // written by vertex shader, read by fragment shader
-    const Matrix4f        uniform_transform = ViewPort*Projection*ModelView;
+    const Matrix4f        uniform_transform = Projection*ModelView;
 
     std::vector<Shader *> uniform_shaders;
     int                   uniform_interval = 0;
     int                   varying_selector = 0;
-    Vector3f              varying_svertex[3];
+    Vector4f              varying_svertex[3];
     int                   varying_vertexi = 0;
 
     ~MultiShader()
@@ -93,7 +93,7 @@ struct MultiShader
 struct TexturedGouraudShader
 : public GouraudShader
 {
-    virtual Vector3f vertex(int iface, int nthvert);
+    virtual Vector4f vertex(int iface, int nthvert);
 
     virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
@@ -142,7 +142,7 @@ struct TexturedSpecularShader
 struct PhongShader
 : public GouraudShader
 {
-    virtual Vector3f vertex(int iface, int nthvert);
+    virtual Vector4f vertex(int iface, int nthvert);
 
     virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
@@ -157,7 +157,7 @@ struct PhongShader
 struct DarbouxNormalShader
 : public GL_Impl::Shader
 {
-    virtual Vector3f vertex(int iface, int nthvert);
+    virtual Vector4f vertex(int iface, int nthvert);
 
     virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
@@ -168,8 +168,8 @@ struct DarbouxNormalShader
 
     Vector3i       varying_uv_index;       // uv_indexes
     Matrix3f       varying_normals;        // normals indexes.
-    Matrix3f       varying_vertex;         // triangle in Projection*Modelview
-    const Matrix4f uniform_transform    = ViewPort*Projection*ModelView;
+    Matrix<float, 3,4> varying_vertex;         // triangle in Projection*Modelview
+    const Matrix4f uniform_transform    = Projection*ModelView;
     const Matrix4f uniform_transform_TI = (Projection*ModelView).transpose().inverse();
     int            varying_ambient_value;
     std::shared_ptr<Images::Image> uniform_ambient_image;
@@ -182,12 +182,12 @@ struct DarbouxNormalShader
 struct EmptyShader
 : public GL_Impl::Shader
 {
-    virtual Vector3f vertex(int iface, int nthvert);
+    virtual Vector4f vertex(int iface, int nthvert);
 
     virtual bool fragment(Vector3f baricentric, Images::Color &color)
     { return true; }
 
-    Matrix4f uniform_transform = ViewPort*Projection*ModelView; // transformation matrix.
+    Matrix4f uniform_transform = Projection*ModelView; // transformation matrix.
 };
 
 /** \struct HardShadowsShader
@@ -197,7 +197,7 @@ struct EmptyShader
 struct HardShadowsShader
 : public DarbouxNormalShader
 {
-    virtual Vector3f vertex(int iface, int nthvert);
+    virtual Vector4f vertex(int iface, int nthvert);
 
     virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
@@ -213,7 +213,7 @@ struct HardShadowsShader
 struct FinalShader
 : public GL_Impl::Shader
 {
-    virtual Vector3f vertex(int iface, int nthvert);
+    virtual Vector4f vertex(int iface, int nthvert);
 
     virtual bool fragment(Vector3f baricentric, Images::Color &color);
 
@@ -225,9 +225,9 @@ struct FinalShader
 
     Vector3i       varying_uv_index; // uv_indexes
     Matrix3f       varying_normals;  // normals indexes.
-    Matrix3f       varying_vertex;   // triangle in Projection*Modelview
+    Matrix<float, 3,4> varying_vertex;   // triangle in Projection*Modelview
     Matrix3f       varying_dVertex;  // triangle in light projection.
-    const Matrix4f uniform_transform    = ViewPort*Projection*ModelView;
+    const Matrix4f uniform_transform    = Projection*ModelView;
     const Matrix4f uniform_transform_TI = (Projection*ModelView).transpose().inverse();
     Matrix4f       uniform_transform_S; // matrix of the light depth computation.
     int            varying_ambient_value;

@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
   BlockTimer timer("Render");
 
 //  auto object = Wavefront::read("obj/TF2-Engineer/Engineer.obj");
-  auto object = diablo();
+  auto object = africanHead();
 
   // z-buffer generation pass
   std::cout << "===== z-buffer pass =====" << std::endl << std::flush;
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
       EmptyShader shader;
       shader.uniform_mesh = mesh;
 
-      Vector3f screen_coords[3];
+      Vector4f screen_coords[3];
       for (int j = 0; j < 3; j++)
       {
         screen_coords[j] = shader.vertex(i, j);
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
       EmptyShader shader;
       shader.uniform_mesh = mesh;
 
-      Vector3f screen_coords[3];
+      Vector4f screen_coords[3];
       for (int j = 0; j < 3; j++)
       {
         screen_coords[j] = shader.vertex(i, j);
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
       shader.uniform_mesh = mesh;
       shader.uniform_glow_coeff = 2.5;
 
-      Vector3f screen_coords[3];
+      Vector4f screen_coords[3];
       for (int j = 0; j < 3; j++)
       {
         screen_coords[j] = shader.vertex(i, j);
