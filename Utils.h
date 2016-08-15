@@ -21,8 +21,11 @@
 #define UTILS_H_
 
 // Project
-#include <Images.h>
+#include "Images.h"
 #include "Algebra.h"
+#include "Mesh.h"
+
+// C++
 #include <chrono>
 #include <memory>
 #include <string>
@@ -154,6 +157,21 @@ namespace Utils
       const std::string                                    m_id;        /** timer id.                 */
       const std::chrono::high_resolution_clock::time_point m_startTime; /** object construction time. */
   };
+
+  /** \brief Helper method to load "african head" model.
+   *
+   */
+  std::shared_ptr<Wavefront> africanHead();
+
+  /** \brief Helper method to load "diablo pose" model.
+   *
+   */
+  std::shared_ptr<Wavefront> diablo();
+
+  /** \brief Helper method to load "floor" model.
+   *
+   */
+  std::shared_ptr<Wavefront> floor();
 
 } // namespace Utils
 

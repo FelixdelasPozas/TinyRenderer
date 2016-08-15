@@ -203,3 +203,166 @@ void Utils::zBuffer::clear()
 {
   std::fill_n(m_data, m_width*m_height, -std::numeric_limits<float>::max());
 }
+
+//--------------------------------------------------------------------
+std::shared_ptr<Wavefront> Utils::africanHead()
+{
+  auto object = std::make_shared<Wavefront>();
+  auto material = std::make_shared<Material>();
+
+  std::string materialId = "african_head";
+
+  std::string id = "obj/african_head/african_head_diffuse.tga";
+  auto diffuseTex = TGA::read(id);
+  assert(diffuseTex);
+  material->addTexture(id, diffuseTex);
+  material->addMaterialTexture(materialId, Material::TYPE::DIFFUSE, id);
+
+  id = "obj/african_head/african_head_nm.tga";
+  auto normalMapTex = TGA::read(id);
+  assert(normalMapTex);
+  material->addTexture(id, normalMapTex);
+  material->addMaterialTexture(materialId, Material::TYPE::NORMAL, id);
+
+  id = "obj/african_head/african_head_spec.tga";
+  auto specular = TGA::read(id);
+  assert(specular);
+  material->addTexture(id, specular);
+  material->addMaterialTexture(materialId, Material::TYPE::SPECULAR, id);
+
+  id = "obj/african_head/african_head_nm_tangent.tga";
+  auto tangent = TGA::read(id);
+  assert(tangent);
+  material->addTexture(id, tangent);
+  material->addMaterialTexture(materialId, Material::TYPE::NORMALTS, id);
+
+  auto temp = Wavefront::read("obj/african_head/african_head.obj");
+  assert(temp);
+  for(auto mesh: temp->meshes())
+  {
+    mesh->setMaterialId(materialId);
+    object->addMesh(mesh);
+  }
+
+  materialId = "african_head_eye";
+
+  id = "obj/african_head/african_head_eye_inner_diffuse.tga";
+  diffuseTex = TGA::read(id);
+  assert(diffuseTex);
+  material->addTexture(id, diffuseTex);
+  material->addMaterialTexture(materialId, Material::TYPE::DIFFUSE, id);
+
+  id = "obj/african_head/african_head_eye_inner_nm.tga";
+  normalMapTex = TGA::read(id);
+  assert(normalMapTex);
+  material->addTexture(id, normalMapTex);
+  material->addMaterialTexture(materialId, Material::TYPE::NORMAL, id);
+
+  id = "obj/african_head/african_head_eye_inner_spec.tga";
+  specular = TGA::read(id);
+  assert(specular);
+  material->addTexture(id, specular);
+  material->addMaterialTexture(materialId, Material::TYPE::SPECULAR, id);
+
+  id = "obj/african_head/african_head_eye_inner_nm_tangent.tga";
+  tangent = TGA::read(id);
+  assert(tangent);
+  material->addTexture(id, tangent);
+  material->addMaterialTexture(materialId, Material::TYPE::NORMALTS, id);
+
+  temp = Wavefront::read("obj/african_head/african_head_eye_inner.obj");
+  assert(temp);
+  for (auto mesh : temp->meshes())
+  {
+    mesh->setMaterialId(materialId);
+    object->addMesh(mesh);
+  }
+
+  object->setMaterial(material);
+
+  return object;
+}
+
+//--------------------------------------------------------------------
+std::shared_ptr<Wavefront> Utils::diablo()
+{
+  auto object = std::make_shared<Wavefront>();
+  auto material = std::make_shared<Material>();
+
+  std::string materialId = "diablo";
+
+  std::string id = "obj/diablo3_pose/diablo3_pose_diffuse.tga";
+  auto diffuseTex = TGA::read(id);
+  assert(diffuseTex);
+  material->addTexture(id, diffuseTex);
+  material->addMaterialTexture(materialId, Material::TYPE::DIFFUSE, id);
+
+  id = "obj/diablo3_pose/diablo3_pose_nm.tga";
+  auto normalMapTex = TGA::read(id);
+  assert(normalMapTex);
+  material->addTexture(id, normalMapTex);
+  material->addMaterialTexture(materialId, Material::TYPE::NORMAL, id);
+
+  id = "obj/diablo3_pose/diablo3_pose_spec.tga";
+  auto specular = TGA::read(id);
+  assert(specular);
+  material->addTexture(id, specular);
+  material->addMaterialTexture(materialId, Material::TYPE::SPECULAR, id);
+
+  id = "obj/diablo3_pose/diablo3_pose_nm_tangent.tga";
+  auto tangent = TGA::read(id);
+  assert(tangent);
+  material->addTexture(id, tangent);
+  material->addMaterialTexture(materialId, Material::TYPE::NORMALTS, id);
+
+  id = "obj/diablo3_pose/diablo3_pose_glow.tga";
+  auto glow = TGA::read(id);
+  assert(glow);
+  material->addTexture(id, glow);
+  material->addMaterialTexture(materialId, Material::TYPE::GLOW, id);
+
+  auto obj = Wavefront::read("obj/diablo3_pose/diablo3_pose.obj");
+  assert(obj);
+  for (auto mesh : obj->meshes())
+  {
+    mesh->setMaterialId(materialId);
+    object->addMesh(mesh);
+  }
+
+  object->setMaterial(material);
+
+  return object;
+}
+
+//--------------------------------------------------------------------
+std::shared_ptr<Wavefront> Utils::floor()
+{
+  auto object = std::make_shared<Wavefront>();
+  auto material = std::make_shared<Material>();
+
+  std::string materialId = "floor";
+
+  std::string id = "obj/floor_diffuse.tga";
+  auto diffuseTex = TGA::read(id);
+  assert(diffuseTex);
+  material->addTexture(id, diffuseTex);
+  material->addMaterialTexture(materialId, Material::TYPE::DIFFUSE, id);
+
+  id = "obj/floor_nm_tangent.tga";
+  auto tangent = TGA::read(id);
+  assert(tangent);
+  material->addTexture(id, tangent);
+  material->addMaterialTexture(materialId, Material::TYPE::NORMALTS, id);
+
+  auto obj = Wavefront::read("obj/floor.obj");
+  assert(obj);
+  for (auto mesh : obj->meshes())
+  {
+    mesh->setMaterialId(materialId);
+    object->addMesh(mesh);
+  }
+
+  object->setMaterial(material);
+
+  return object;
+}

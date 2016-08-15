@@ -102,6 +102,13 @@ class Wavefront
   public:
     using Meshes = std::vector<std::shared_ptr<Mesh>>;
 
+    /** \brief WaveFront class constructor.
+     *
+     */
+    explicit Wavefront(const std::string &id = "Empty")
+    : m_id{id}
+    {};
+
     /** \brief WaveFront class destructor.
      *
      */
@@ -143,14 +150,6 @@ class Wavefront
      *
      */
     void setMaterial(std::shared_ptr<Material> material);
-
-  private:
-    /** \brief WaveFront class constructor.
-     *
-     */
-    explicit Wavefront(const std::string &id)
-    : m_id{id}
-    {};
 
   private:
     std::shared_ptr<Material> m_material; /** meshe's material.                */

@@ -354,7 +354,7 @@ Vector3f FinalShader::vertex(int iface, int nthvert)
 
   varying_uv_index[nthvert] = uniform_mesh->getFaceUVIds(iface)[nthvert];
   varying_vertex[nthvert]   = (uniform_transform * vertex).project();
-  varying_normals.setColumn(nthvert, (uniform_transform_TI * uniform_mesh->getNormal(normalId).augment(0)).project(false).normalize());
+  varying_normals.setColumn(nthvert, (uniform_transform_TI * uniform_mesh->getNormal(normalId).augment(0)).project(false));
   varying_dVertex.setColumn(nthvert, (uniform_transform_S * vertex).project());
 
   return varying_vertex[nthvert];
