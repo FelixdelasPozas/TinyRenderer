@@ -395,7 +395,7 @@ std::shared_ptr<Wavefront> Wavefront::read(const std::string& filename)
 
       if(object->m_material != nullptr)
       {
-        std::cout << " material: " << mesh->materialId() << " textures: " << (mesh->hasSpecular() ? "S" : "") << (mesh->hasNormalMap() ? "N" : "") << (mesh->hasTangent() ? "T" : "");
+        std::cout << " material: " << mesh->materialId() << " textures: " << (mesh->hasDiffuse() ? "D" : "") << (mesh->hasSpecular() ? "S" : "") << (mesh->hasNormalMap() ? "N" : "") << (mesh->hasTangent() ? "T" : "");
       }
       std::cout << " vertices: " << mesh->m_vertices.size() << " faces: " << mesh->m_faces.size();
       std::cout << " uv: " << mesh->m_uv.size() << " normals: " << mesh->m_normals.size() << std::endl;

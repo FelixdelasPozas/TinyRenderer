@@ -52,15 +52,13 @@ int main(int argc, char *argv[])
   auto threadsNum  = std::thread::hardware_concurrency()-4;
   short int width  = 1000;
   short int height = 1000;
-//  Vector3f eye   {5,5,10};
-  Vector3f eye   {1,1,4};
-  Vector3f center{0.,0.,0.};
+  Vector3f eye   {5,5,10};
+  Vector3f center{0.,2.3,0.};
   Vector3f up    {0,1,0};
 
-  std::cout << "Using " << threadsNum << " threads." << std::flush;
+  std::cout << "Using " << threadsNum << " threads." << std::endl;
 
-  //auto lightVector = Vector3f{-5.,10.,1.};
-  auto lightVector = Vector3f{1.,2.,1.};
+  auto lightVector = Vector3f{-5.,10.,3.};
   Light = lightVector;
   viewport(width/8, height/8, width*3/4, height*3/4);
   projection(-1.f/(eye-center).norm());
@@ -71,8 +69,7 @@ int main(int argc, char *argv[])
 
   BlockTimer timer("Render");
 
-//  auto object = Wavefront::read("obj/TF2-Engineer/Engineer.obj");
-  auto object = africanHead();
+  auto object = Wavefront::read("obj/TF2-Engineer/Engineer.obj");
 
   // z-buffer generation pass
   std::cout << "===== z-buffer pass =====" << std::endl << std::flush;

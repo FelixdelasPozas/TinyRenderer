@@ -167,7 +167,7 @@ void GL_Impl::triangle(Vector4f *sPts, Shader &shader, zBuffer &buffer, Images::
 
       if(bc_screen[0] < 0 || bc_screen[1] < 0 || bc_screen[2] < 0) continue;
 
-      P[2] = sPts[0][2]*bc_clip[0] + sPts[1][2]*bc_clip[1] + sPts[2][2]*bc_clip[2];
+      P[2] = points[0][2]*bc_clip[0] + points[1][2]*bc_clip[1] + points[2][2]*bc_clip[2];
       if (!buffer.checkAndSet(P[0], P[1], P[2])) continue;
 
       Color color;

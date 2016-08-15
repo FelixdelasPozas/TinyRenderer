@@ -340,6 +340,12 @@ class Mesh
     Images::Color getSSS(Vector2f uv)
     { return getGlow(uv[0], uv[1]); }
 
+    /** \brief Returns true if the model has diffuse texture and false otherwise.
+     *
+     */
+    bool hasDiffuse() const
+    { return m_material->hasTexture(m_mtl, Material::TYPE::DIFFUSE); }
+
     /** \brief Returns true if the model has specular texture and false otherwise.
      *
      */
