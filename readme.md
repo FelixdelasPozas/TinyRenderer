@@ -29,19 +29,19 @@ Some images from the renderer.
 
 Scene z-buffer.
 
-![zbuffer]()
+![zbufferpass](https://cloud.githubusercontent.com/assets/12167134/17668098/1d33a606-6308-11e6-81b8-8a1683fabf30.png)
 
 Result of the ambient occlusion pass.
 
-![ambient]()
+![ambient](https://cloud.githubusercontent.com/assets/12167134/17668100/1d4239dc-6308-11e6-854d-21559a07d6d2.png)
 
 Light depth pass to compute self-shadowing.
 
-![lightdepth]()
+![depthpass](https://cloud.githubusercontent.com/assets/12167134/17668099/1d3b1274-6308-11e6-8019-0dfe3f0fecf6.png)
 
 Final render: diffuse, ambient and specular lightning with normal mapping.
 
-![render]()
+![render](https://cloud.githubusercontent.com/assets/12167134/17668097/1d28486a-6308-11e6-912a-69b6bf6096c3.png)
 
 # Repository information
 **Version**: 1.0.0
